@@ -1,0 +1,50 @@
+{
+  "name": "open-grid-monorepo",
+  "version": "1.0.0",
+  "description": "Open Grid - Decentralized electrical networking monitoring system",
+  "private": true,
+  "workspaces": [
+    "packages/contracts",
+    "packages/frontend",
+    "packages/scripts",
+    "packages/mock-data"
+  ],
+  "scripts": {
+    "build": "yarn workspaces run build",
+    "test": "yarn workspaces run test",
+    "lint": "yarn workspaces run lint",
+    "clean": "yarn workspaces run clean",
+    "dev": "yarn workspace @open-grid/frontend dev",
+    "contracts:deploy": "yarn workspace @open-grid/contracts deploy",
+    "contracts:test": "yarn workspace @open-grid/contracts test",
+    "scripts:listen": "yarn workspace @open-grid/scripts listen",
+    "scripts:ingest": "yarn workspace @open-grid/scripts ingest",
+    "mock:generate": "yarn workspace @open-grid/mock-data generate"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "yarn": ">=1.22.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/open-grid"
+  },
+  "keywords": [
+    "blockchain",
+    "ethereum",
+    "polygon",
+    "arbitrum",
+    "chainlink",
+    "energy-monitoring",
+    "smart-meters",
+    "defi",
+    "multi-chain"
+  ],
+  "license": "MIT"
+}
