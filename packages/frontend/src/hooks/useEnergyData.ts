@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useContractRead, useContractEvent } from 'wagmi';
+import { useReadContract, useWatchContractEvent } from 'wagmi';
 import { toast } from 'react-hot-toast';
-import { EnergyNode, EnergyData } from '@/types/energy';
+import { EnergyNode, EnergyData, NodeData } from '@/types/energy';
 import { SUPPORTED_CHAINS } from '@/lib/wagmi';
 import { REFRESH_INTERVALS } from '@/lib/constants';
 
@@ -42,7 +42,7 @@ const ENERGY_MONITOR_ABI = [
 ] as const;
 
 export function useEnergyData(chainId: number) {
-  const [nodes, setNodes] = useState<EnergyNode[]>([]);
+  const [nodes, setNodes] = useState<NodeData[]>([]);
   const [latestData, setLatestData] = useState<EnergyData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -51,93 +51,61 @@ export function useEnergyData(chainId: number) {
   const contractAddress = chainConfig?.contractAddress as `0x${string}` | undefined;
 
   // Mock data for demonstration when no contract is deployed
-  const mockNodes: EnergyNode[] = useMemo(() => [
+  const mockNodes: NodeData[] = useMemo(() => [
     {
-      id: '1',
+      id: 0,
       location: 'lat:40.7128,lon:-74.0060',
-      latitude: 40.7128,
-      longitude: -74.0060,
       active: true,
+      registeredAt: Math.floor(Date.now() / 1000) - 86400,
       lastUpdate: Math.floor(Date.now() / 1000),
-      currentUsage: Math.random() * 8000 + 1000,
-      chainId,
-      status: 'active',
     },
     {
-      id: '2', 
+      id: 1,
       location: 'lat:34.0522,lon:-118.2437',
-      latitude: 34.0522,
-      longitude: -118.2437,
       active: true,
+      registeredAt: Math.floor(Date.now() / 1000) - 172800,
       lastUpdate: Math.floor(Date.now() / 1000),
-      currentUsage: Math.random() * 6000 + 2000,
-      chainId,
-      status: 'active',
     },
     {
-      id: '3',
+      id: 2,
       location: 'lat:41.8781,lon:-87.6298',
-      latitude: 41.8781,
-      longitude: -87.6298,
       active: true,
+      registeredAt: Math.floor(Date.now() / 1000) - 259200,
       lastUpdate: Math.floor(Date.now() / 1000),
-      currentUsage: Math.random() * 4000 + 1500,
-      chainId,
-      status: 'active',
     },
     {
-      id: '4',
+      id: 3,
       location: 'lat:29.7604,lon:-95.3698',
-      latitude: 29.7604,
-      longitude: -95.3698,
       active: false,
+      registeredAt: Math.floor(Date.now() / 1000) - 345600,
       lastUpdate: Math.floor(Date.now() / 1000) - 3600,
-      currentUsage: 0,
-      chainId,
-      status: 'inactive',
     },
     {
-      id: '5',
+      id: 4,
       location: 'lat:39.7392,lon:-104.9903',
-      latitude: 39.7392,
-      longitude: -104.9903,
       active: true,
+      registeredAt: Math.floor(Date.now() / 1000) - 432000,
       lastUpdate: Math.floor(Date.now() / 1000),
-      currentUsage: Math.random() * 3000 + 800,
-      chainId,
-      status: 'active',
-    },
-    {
-      id: '6',
-      location: 'lat:47.6062,lon:-122.3321',
-      latitude: 47.6062,
-      longitude: -122.3321,
-      active: true,
-      lastUpdate: Math.floor(Date.now() / 1000),
-      currentUsage: Math.random() * 5000 + 1200,
-      chainId,
-      status: 'active',
     },
   ], [chainId]);
 
   // Contract reads (will fallback to mock data if no contract)
-  const { data: contractData, isError, error: contractError } = useContractRead({
+  const { data: contractData, isError, error: contractError } = useReadContract({
     address: contractAddress,
     abi: ENERGY_MONITOR_ABI,
     functionName: 'getActiveNodes',
-    enabled: !!contractAddress,
-    cacheTime: REFRESH_INTERVALS.ENERGY_DATA,
-    onError: (error) => {
-      console.warn('Contract read failed, using mock data:', error);
+    query: {
+      enabled: !!contractAddress,
+      refetchInterval: REFRESH_INTERVALS.ENERGY_DATA,
     },
   });
 
   // Listen for real-time events
-  useContractEvent({
+  useWatchContractEvent({
     address: contractAddress,
     abi: ENERGY_MONITOR_ABI,
     eventName: 'DataUpdated',
-    listener: (logs) => {
+    onLogs: (logs) => {
       logs.forEach((log) => {
         const { dataId, nodeId, kWh, location, timestamp } = log.args;
 
@@ -156,8 +124,8 @@ export function useEnergyData(chainId: number) {
         
         // Update node with latest usage
         setNodes(prev => prev.map(node =>
-          node.id === nodeId?.toString()
-            ? { ...node, currentUsage: Number(kWh), lastUpdate: Number(timestamp) }
+          node.id === Number(nodeId)
+            ? { ...node, lastUpdate: Number(timestamp) }
             : node
         ));
 
@@ -180,15 +148,11 @@ export function useEnergyData(chainId: number) {
           const nodePromises = nodeIds.map(async (nodeId) => {
             // In a real implementation, you'd fetch individual node data
             return {
-              id: nodeId.toString(),
+              id: Number(nodeId),
               location: 'lat:0,lon:0', // Would come from contract
-              latitude: 0,
-              longitude: 0,
               active: true,
+              registeredAt: Math.floor(Date.now() / 1000) - 86400,
               lastUpdate: Math.floor(Date.now() / 1000),
-              currentUsage: 0,
-              chainId,
-              status: 'active' as const,
             };
           });
           
@@ -217,19 +181,32 @@ export function useEnergyData(chainId: number) {
       const interval = setInterval(() => {
         setNodes(prev => prev.map(node => ({
           ...node,
-          currentUsage: node.active ? Math.random() * 8000 + 1000 : 0,
-          lastUpdate: Math.floor(Date.now() / 1000),
+          lastUpdate: node.active ? Math.floor(Date.now() / 1000) : node.lastUpdate,
         })));
+        
+        // Generate mock energy data
+        const mockData = mockNodes
+          .filter(node => node.active)
+          .map(node => ({
+            id: Math.random().toString(),
+            nodeId: node.id.toString(),
+            kWh: Math.random() * 8000 + 1000,
+            location: node.location,
+            timestamp: Math.floor(Date.now() / 1000),
+            chainId,
+          }));
+        
+        setLatestData(prev => [...mockData, ...prev.slice(0, 50)]);
       }, 30000); // Update every 30 seconds
 
       return () => clearInterval(interval);
     }
-  }, [contractAddress]);
+  }, [contractAddress, mockNodes, chainId]);
 
   // Calculate derived data
   const totalUsage = useMemo(() => {
-    return nodes.reduce((sum, node) => sum + (node.active ? node.currentUsage : 0), 0);
-  }, [nodes]);
+    return latestData.reduce((sum, data) => sum + data.kWh, 0);
+  }, [latestData]);
 
   const activeNodes = useMemo(() => {
     return nodes.filter(node => node.active).length;

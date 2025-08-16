@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useAccount } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Header } from '@/components/layout/Header';
-import { MapContainer } from '@/components/map/MapContainer';
+import { SimpleMapContainer } from '@/components/map/SimpleMapContainer';
 import { Dashboard } from '@/components/dashboard/Dashboard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, Activity, Map, BarChart3 } from 'lucide-react';
@@ -142,7 +142,7 @@ export default function HomePage() {
             transition={{ duration: 0.3 }}
             className="h-full"
           >
-            {viewMode === 'map' ? <MapContainer /> : <Dashboard />}
+            {viewMode === 'map' ? <SimpleMapContainer /> : <Dashboard />}
           </motion.div>
         </AnimatePresence>
       </main>

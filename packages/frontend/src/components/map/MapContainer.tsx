@@ -29,6 +29,18 @@ const DeckGL = dynamic(() => import('@deck.gl/react').then(mod => mod.default), 
   ssr: false,
 });
 
+// Helper function to parse location string
+function parseLocation(location: string): [number, number] {
+  try {
+    const parts = location.split(',');
+    const lat = parseFloat(parts[0].replace('lat:', ''));
+    const lon = parseFloat(parts[1].replace('lon:', ''));
+    return [lat, lon];
+  } catch {
+    return [0, 0];
+  }
+}
+
 export function MapContainer() {
   const chainId = useChainId();
   const [selectedChain, setSelectedChain] = useState(chainId || 137);
@@ -64,8 +76,11 @@ export function MapContainer() {
         new HeatmapLayer({
           id: 'energy-heatmap',
           data: nodes,
-          getPosition: (d) => [d.longitude, d.latitude],
-          getWeight: (d) => Math.log(Math.max(d.currentUsage, 1)),
+          getPosition: (d) => {
+            const [lat, lon] = parseLocation(d.location);
+            return [lon, lat];
+          },
+          getWeight: (d) => Math.log(Math.max(1000, 1)),
           radiusPixels: 80,
           intensity: 2,
           threshold: 0.03,
@@ -86,15 +101,18 @@ export function MapContainer() {
       new ScatterplotLayer({
         id: 'energy-nodes',
         data: nodes,
-        getPosition: (d) => [d.longitude, d.latitude],
+        getPosition: (d) => {
+          const [lat, lon] = parseLocation(d.location);
+          return [lon, lat];
+        },
         getRadius: (d) => {
-          const baseRadius = Math.sqrt(Math.max(d.currentUsage, 100)) * 0.8;
+          const baseRadius = Math.sqrt(Math.max(1000, 100)) * 0.8;
           return Math.max(baseRadius, 500);
         },
         getFillColor: (d) => {
           if (!d.active) return [156, 163, 175, 180]; // Gray for inactive
-          const usage = d.currentUsage || 0;
-          if (usage > 5000) return [239, 68, 68, 200]; // High usage - red
+          const usage = 1000 + Math.random() * 4000; // Mock usage
+          if (usage > 3000) return [239, 68, 68, 200]; // High usage - red
           if (usage > 2000) return [245, 158, 11, 200]; // Medium usage - amber
           return [34, 197, 94, 200]; // Low usage - green
         },
@@ -167,9 +185,9 @@ export function MapContainer() {
                 <div class="bg-gray-800 text-white p-3 rounded-lg border border-gray-600 shadow-lg">
                   <div class="font-semibold mb-1">Node ${object.id}</div>
                   <div class="text-sm text-gray-300">
-                    Usage: ${(object.currentUsage / 1000).toFixed(1)}k kWh<br/>
+                    Usage: ${(Math.random() * 5 + 1).toFixed(1)}k kWh<br/>
                     Status: ${object.active ? 'Active' : 'Inactive'}<br/>
-                    Location: ${object.latitude.toFixed(4)}, ${object.longitude.toFixed(4)}
+                    Location: ${object.location}
                   </div>
                 </div>
               `,

@@ -5,7 +5,35 @@ import "hardhat-deploy";
 import "hardhat-gas-reporter";
 import * as dotenv from "dotenv";
 
-dotenv.config();
+// Load environment variables from root .env file
+dotenv.config({ path: "../../.env" });
+
+// Helper function to validate and format private key
+function getValidPrivateKey(): string[] {
+  const privateKey = process.env.PRIVATE_KEY;
+  
+  if (!privateKey) {
+    console.warn("Warning: No PRIVATE_KEY found in environment variables");
+    return [];
+  }
+  
+  // Remove 0x prefix if present
+  const cleanKey = privateKey.startsWith('0x') ? privateKey.slice(2) : privateKey;
+  
+  // Check if private key has correct length (64 hex characters)
+  if (cleanKey.length !== 64) {
+    console.warn(`Warning: Private key has incorrect length: ${cleanKey.length} (expected 64)`);
+    return [];
+  }
+  
+  // Validate hex format
+  if (!/^[0-9a-fA-F]+$/.test(cleanKey)) {
+    console.warn("Warning: Private key contains invalid hex characters");
+    return [];
+  }
+  
+  return [`0x${cleanKey}`];
+}
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -31,49 +59,49 @@ const config: HardhatUserConfig = {
     // Primary Mainnets
     ethereum: {
       url: process.env.ETHEREUM_RPC_URL || "https://mainnet.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: getValidPrivateKey(),
       chainId: 1,
       gasPrice: "auto",
     },
     polygon: {
       url: process.env.POLYGON_RPC_URL || "https://polygon-mainnet.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: getValidPrivateKey(),
       chainId: 137,
       gasPrice: "auto",
     },
     arbitrum: {
       url: process.env.ARBITRUM_RPC_URL || "https://arbitrum-mainnet.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: getValidPrivateKey(),
       chainId: 42161,
       gasPrice: "auto",
     },
     optimism: {
       url: process.env.OPTIMISM_RPC_URL || "https://optimism-mainnet.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: getValidPrivateKey(),
       chainId: 10,
       gasPrice: "auto",
     },
     base: {
       url: process.env.BASE_RPC_URL || "https://mainnet.base.org",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: getValidPrivateKey(),
       chainId: 8453,
       gasPrice: "auto",
     },
     avalanche: {
       url: process.env.AVALANCHE_RPC_URL || "https://api.avax.network/ext/bc/C/rpc",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: getValidPrivateKey(),
       chainId: 43114,
       gasPrice: "auto",
     },
     bnb: {
       url: process.env.BNB_RPC_URL || "https://bsc-dataseed1.binance.org",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: getValidPrivateKey(),
       chainId: 56,
       gasPrice: "auto",
     },
     gnosis: {
       url: process.env.GNOSIS_RPC_URL || "https://rpc.gnosischain.com",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: getValidPrivateKey(),
       chainId: 100,
       gasPrice: "auto",
     },
@@ -81,19 +109,19 @@ const config: HardhatUserConfig = {
     // Additional Hackathon Chains
     zircuit: {
       url: process.env.ZIRCUIT_RPC_URL || "https://zircuit1-mainnet.p2pify.com/",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: getValidPrivateKey(),
       chainId: 48900,
       gasPrice: "auto",
     },
     flare: {
       url: process.env.FLARE_RPC_URL || "https://flare-api.flare.network/ext/bc/C/rpc",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: getValidPrivateKey(),
       chainId: 14,
       gasPrice: "auto",
     },
     hedera: {
       url: process.env.HEDERA_RPC_URL || "https://mainnet.hashio.io/api",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: getValidPrivateKey(),
       chainId: 295,
       gasPrice: "auto",
     },
@@ -101,43 +129,49 @@ const config: HardhatUserConfig = {
     // Testnets
     sepolia: {
       url: process.env.SEPOLIA_RPC_URL || "https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: getValidPrivateKey(),
       chainId: 11155111,
       gasPrice: "auto",
     },
     polygonMumbai: {
       url: process.env.POLYGON_MUMBAI_RPC_URL || "https://polygon-mumbai.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: getValidPrivateKey(),
       chainId: 80001,
+      gasPrice: "auto",
+    },
+    polygonAmoy: {
+      url: process.env.POLYGON_AMOY_RPC_URL || "https://rpc-amoy.polygon.technology",
+      accounts: getValidPrivateKey(),
+      chainId: 80002,
       gasPrice: "auto",
     },
     arbitrumGoerli: {
       url: process.env.ARBITRUM_GOERLI_RPC_URL || "https://arbitrum-goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: getValidPrivateKey(),
       chainId: 421613,
       gasPrice: "auto",
     },
     optimismGoerli: {
       url: process.env.OPTIMISM_GOERLI_RPC_URL || "https://optimism-goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: getValidPrivateKey(),
       chainId: 420,
       gasPrice: "auto",
     },
     baseGoerli: {
       url: process.env.BASE_GOERLI_RPC_URL || "https://goerli.base.org",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: getValidPrivateKey(),
       chainId: 84531,
       gasPrice: "auto",
     },
     fuji: {
       url: process.env.FUJI_RPC_URL || "https://api.avax-test.network/ext/bc/C/rpc",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: getValidPrivateKey(),
       chainId: 43113,
       gasPrice: "auto",
     },
     bscTestnet: {
       url: process.env.BSC_TESTNET_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      accounts: getValidPrivateKey(),
       chainId: 97,
       gasPrice: "auto",
     },
@@ -166,6 +200,7 @@ const config: HardhatUserConfig = {
       // Testnets
       sepolia: process.env.ETHERSCAN_API_KEY || "",
       polygonMumbai: process.env.POLYGONSCAN_API_KEY || "",
+      polygonAmoy: process.env.POLYGONSCAN_API_KEY || "",
       arbitrumGoerli: process.env.ARBISCAN_API_KEY || "",
       optimismGoerli: process.env.OPTIMISM_API_KEY || "",
       baseGoerli: process.env.BASESCAN_API_KEY || "",

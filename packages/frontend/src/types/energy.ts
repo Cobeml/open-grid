@@ -12,6 +12,14 @@ export interface EnergyNode {
   status: 'active' | 'inactive' | 'maintenance' | 'error';
 }
 
+export interface NodeData {
+  id: number;
+  location: string;
+  active: boolean;
+  registeredAt: number;
+  lastUpdate: number;
+}
+
 export interface EnergyData {
   id: string;
   nodeId: string;
