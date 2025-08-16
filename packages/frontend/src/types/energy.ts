@@ -28,7 +28,7 @@ export interface EnergyData {
   timestamp: number;
   chainId: number;
   transactionHash?: string;
-  blockNumber?: number;
+  blockNumber?: number | bigint;
 }
 
 export interface Alert {

@@ -11,9 +11,11 @@ import {
   Moon, 
   Satellite,
   Mountain,
-  ChevronDown
+  ChevronDown,
+  Map
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { MAP_STYLES } from '@/lib/constants';
 
 interface MapControlsProps {
   showHeatmap: boolean;
@@ -27,22 +29,27 @@ interface MapControlsProps {
 
 const mapStyles = [
   {
-    id: 'mapbox://styles/mapbox/dark-v11',
-    name: 'Dark',
-    icon: Moon,
-  },
-  {
-    id: 'mapbox://styles/mapbox/light-v11', 
-    name: 'Light',
-    icon: Sun,
-  },
-  {
-    id: 'mapbox://styles/mapbox/satellite-v9',
+    id: MAP_STYLES.SATELLITE,
     name: 'Satellite',
     icon: Satellite,
   },
   {
-    id: 'mapbox://styles/mapbox/outdoors-v12',
+    id: MAP_STYLES.SATELLITE_STREETS,
+    name: 'Satellite Streets',
+    icon: Map,
+  },
+  {
+    id: MAP_STYLES.DARK,
+    name: 'Dark',
+    icon: Moon,
+  },
+  {
+    id: MAP_STYLES.LIGHT, 
+    name: 'Light',
+    icon: Sun,
+  },
+  {
+    id: MAP_STYLES.TERRAIN,
     name: 'Terrain',
     icon: Mountain,
   },

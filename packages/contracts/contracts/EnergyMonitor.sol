@@ -88,6 +88,48 @@ contract EnergyMonitor is Ownable {
     }
 
     /**
+     * @notice Register multiple nodes in a batch operation
+     * @param locations Array of GPS coordinates
+     */
+    function registerNodesBatch(string[] calldata locations) external onlyOwner {
+        for (uint256 i = 0; i < locations.length; i++) {
+            uint256 nodeId = nodeCount;
+            
+            nodes[nodeId] = Node({
+                location: locations[i],
+                active: true,
+                registeredAt: block.timestamp,
+                lastUpdate: 0
+            });
+            
+            nodeCount++;
+            
+            emit NodeRegistered(nodeId, locations[i]);
+        }
+    }
+
+    /**
+     * @notice Request data updates for multiple nodes in batch
+     * @param nodeIds Array of node IDs to update
+     */
+    function requestDataUpdatesBatch(uint256[] calldata nodeIds) external onlyOwner {
+        for (uint256 i = 0; i < nodeIds.length; i++) {
+            uint256 nodeId = nodeIds[i];
+            if (nodeId >= nodeCount || !nodes[nodeId].active) continue;
+            
+            // Create empty args - function will use stored location
+            string[] memory emptyArgs = new string[](0);
+            
+            // Generate request
+            bytes32 requestId = keccak256(abi.encodePacked(block.timestamp, nodeId, msg.sender, i));
+            emit RequestSent(nodeId, requestId);
+            
+            // Auto-fulfill with realistic data
+            _generateRealisticDataResponse(requestId, nodeId, emptyArgs);
+        }
+    }
+
+    /**
      * @notice Deactivate a monitoring node
      * @param nodeId The ID of the node to deactivate
      */
@@ -110,13 +152,13 @@ contract EnergyMonitor is Ownable {
     }
 
     /**
-     * @notice Mock function to simulate Chainlink Functions data request
+     * @notice Enhanced function to simulate Chainlink Functions with realistic data patterns
      * @param nodeId The node to request data for
      * @param source JavaScript source code (not used in mock)
      * @param encryptedSecretsUrls Encrypted secrets (not used in mock)
      * @param donHostedSecretsSlotID DON hosted secrets slot ID
      * @param donHostedSecretsVersion DON hosted secrets version
-     * @param args Arguments to pass to the source code
+     * @param args Arguments to pass to the source code (nodeId, lat, lon)
      */
     function requestDataUpdate(
         uint256 nodeId,
@@ -133,8 +175,168 @@ contract EnergyMonitor is Ownable {
         
         emit RequestSent(nodeId, requestId);
         
-        // For demo purposes, we could auto-fulfill with mock data
-        // In real implementation, this would trigger Chainlink Functions
+        // Auto-fulfill with realistic mock data using Chainlink Functions logic
+        _generateRealisticDataResponse(requestId, nodeId, args);
+    }
+
+    /**
+     * @notice Generate realistic energy data using NYC consumption patterns
+     * @param requestId The request ID to fulfill
+     * @param nodeId The node ID
+     * @param args Arguments containing coordinates
+     */
+    function _generateRealisticDataResponse(
+        bytes32 requestId,
+        uint256 nodeId,
+        string[] memory args
+    ) internal {
+        // Extract coordinates from args or use node's stored location
+        string memory location = nodes[nodeId].location;
+        uint256 latitude = 407128; // Default NYC lat * 10000
+        uint256 longitude = 740060; // Default NYC lon * 10000
+        
+        if (args.length >= 3) {
+            // Parse coordinates from arguments if provided
+            latitude = _parseCoordinate(args[1]);
+            longitude = _parseCoordinate(args[2]);
+        } else {
+            // Parse from stored location string
+            (latitude, longitude) = _parseLocationCoordinates(location);
+        }
+        
+        // Generate realistic NYC energy consumption patterns
+        uint256 mockKwh = _generateNYCEnergyPattern(nodeId);
+        uint256 timestamp = block.timestamp;
+        
+        // Encode response in Chainlink Functions format
+        uint256 encodedResponse = _encodeChainlinkResponse(
+            timestamp,
+            mockKwh,
+            latitude,
+            longitude,
+            nodeId
+        );
+        
+        // Fulfill the request
+        bytes memory response = abi.encode(encodedResponse);
+        bytes memory err = "";
+        
+        // Call fulfillRequest to process the data
+        this.fulfillRequest(requestId, response, err);
+    }
+
+    /**
+     * @notice Generate realistic NYC energy consumption pattern
+     * @param nodeId The node ID to generate data for
+     * @return Energy consumption in Wh (scaled by 1000)
+     */
+    function _generateNYCEnergyPattern(uint256 nodeId) internal view returns (uint256) {
+        // Base consumption varies by node type and location
+        uint256 baseConsumption = 2000 + (nodeId * 50) + (nodeId % 7) * 300;
+        
+        // Time-based variation (daily pattern simulation)
+        uint256 hourOfDay = (block.timestamp / 3600) % 24;
+        uint256 timeVariation = 0;
+        
+        if (hourOfDay >= 6 && hourOfDay <= 9) {
+            // Morning peak
+            timeVariation = 800;
+        } else if (hourOfDay >= 18 && hourOfDay <= 22) {
+            // Evening peak
+            timeVariation = 1200;
+        } else if (hourOfDay >= 22 || hourOfDay <= 6) {
+            // Night low
+            timeVariation = 200;
+        } else {
+            // Daytime moderate
+            timeVariation = 600;
+        }
+        
+        // Pseudo-random variation based on block data
+        uint256 randomSeed = uint256(keccak256(abi.encodePacked(
+            block.timestamp, 
+            block.prevrandao, 
+            nodeId
+        )));
+        uint256 randomVariation = (randomSeed % 1000) - 500; // ±500 variation
+        
+        // Seasonal variation (summer AC load simulation)
+        uint256 seasonalMultiplier = 100; // Base multiplier
+        uint256 dayOfYear = (block.timestamp / 86400) % 365;
+        if (dayOfYear >= 152 && dayOfYear <= 243) { // June-August
+            seasonalMultiplier = 130; // 30% increase for AC
+        }
+        
+        uint256 finalConsumption = (baseConsumption + timeVariation + randomVariation) * seasonalMultiplier / 100;
+        
+        // Ensure reasonable bounds (0.5 - 10 kWh)
+        if (finalConsumption < 500) finalConsumption = 500;
+        if (finalConsumption > 10000) finalConsumption = 10000;
+        
+        return finalConsumption;
+    }
+
+    /**
+     * @notice Encode response in Chainlink Functions format
+     */
+    function _encodeChainlinkResponse(
+        uint256 timestamp,
+        uint256 kWh,
+        uint256 latitude,
+        uint256 longitude,
+        uint256 nodeId
+    ) internal pure returns (uint256) {
+        return (timestamp << 192) | (kWh << 128) | (latitude << 64) | (longitude << 32) | nodeId;
+    }
+
+    /**
+     * @notice Parse coordinate string to fixed-point integer
+     */
+    function _parseCoordinate(string memory coord) internal pure returns (uint256) {
+        // Simplified parsing - in real implementation would handle decimals properly
+        bytes memory coordBytes = bytes(coord);
+        uint256 result = 0;
+        bool foundDecimal = false;
+        uint256 decimalPlaces = 0;
+        
+        for (uint256 i = 0; i < coordBytes.length && decimalPlaces < 6; i++) {
+            bytes1 char = coordBytes[i];
+            if (char >= 0x30 && char <= 0x39) { // 0-9
+                result = result * 10 + uint256(uint8(char)) - 48;
+                if (foundDecimal) decimalPlaces++;
+            } else if (char == 0x2E && !foundDecimal) { // decimal point
+                foundDecimal = true;
+            }
+        }
+        
+        // Ensure we have 6 decimal places
+        while (decimalPlaces < 6) {
+            result = result * 10;
+            decimalPlaces++;
+        }
+        
+        return result;
+    }
+
+    /**
+     * @notice Parse location string to extract coordinates
+     */
+    function _parseLocationCoordinates(string memory location) 
+        internal 
+        pure 
+        returns (uint256 lat, uint256 lon) 
+    {
+        // Default NYC coordinates if parsing fails
+        lat = 407128; // 40.7128 * 10000
+        lon = 740060; // 74.0060 * 10000
+        
+        bytes memory locationBytes = bytes(location);
+        if (locationBytes.length < 10) return (lat, lon);
+        
+        // Simple parsing for "lat:XX.XXXX,lon:YY.YYYY" format
+        // This is simplified - real implementation would be more robust
+        
+        return (lat, lon);
     }
 
     /**
@@ -191,6 +393,32 @@ contract EnergyMonitor is Ownable {
         dataCount++;
         
         emit DataUpdated(dataId, nodeId, kWh, location, timestamp);
+    }
+
+    /**
+     * @notice Get all active node IDs
+     * @return Array of active node IDs
+     */
+    function getActiveNodes() external view returns (uint256[] memory) {
+        // Count active nodes first
+        uint256 activeCount = 0;
+        for (uint256 i = 0; i < nodeCount; i++) {
+            if (nodes[i].active) {
+                activeCount++;
+            }
+        }
+        
+        // Build array of active node IDs
+        uint256[] memory activeNodeIds = new uint256[](activeCount);
+        uint256 index = 0;
+        for (uint256 i = 0; i < nodeCount; i++) {
+            if (nodes[i].active) {
+                activeNodeIds[index] = i;
+                index++;
+            }
+        }
+        
+        return activeNodeIds;
     }
 
     /**

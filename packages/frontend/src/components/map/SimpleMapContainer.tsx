@@ -3,14 +3,14 @@
 import React, { useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { motion } from 'framer-motion';
-import { useChainId } from 'wagmi';
 import { MapProvider } from 'react-map-gl';
 import { Loader2, Zap } from 'lucide-react';
-import { MAPBOX_ACCESS_TOKEN, INITIAL_VIEW_STATE } from '@/lib/constants';
+import { MAPBOX_ACCESS_TOKEN, INITIAL_VIEW_STATE, DEFAULT_MAP_STYLE } from '@/lib/constants';
 import { useEnergyData } from '@/hooks/useEnergyData';
 import { NetworkSelector } from './NetworkSelector';
 import { MapControls } from './MapControls';
 import { StatsOverlay } from './StatsOverlay';
+import { ContractInfo } from './ContractInfo';
 
 // Dynamic import for MapBox to avoid SSR issues
 const Map = dynamic(() => import('react-map-gl').then(mod => mod.default), {
@@ -41,18 +41,21 @@ function parseLocation(location: string): [number, number] {
   }
 }
 
-export function SimpleMapContainer() {
-  const chainId = useChainId();
-  const [selectedChain, setSelectedChain] = useState(chainId || 137);
+interface SimpleMapContainerProps {
+  selectedChain: number;
+  onChainChange: (chainId: number) => void;
+}
+
+export function SimpleMapContainer({ selectedChain, onChainChange }: SimpleMapContainerProps) {
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [showTooltips, setShowTooltips] = useState(true);
-  const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/dark-v11');
+  const [mapStyle, setMapStyle] = useState<string>(DEFAULT_MAP_STYLE);
   const [selectedNode, setSelectedNode] = useState<any>(null);
 
   const { nodes, isLoading, totalUsage, activeNodes, error } = useEnergyData(selectedChain);
 
-  const handleViewStateChange = useCallback(({ viewState: newViewState }) => {
+  const handleViewStateChange = useCallback(({ viewState: newViewState }: { viewState: any }) => {
     setViewState(newViewState);
   }, []);
 
@@ -80,7 +83,7 @@ export function SimpleMapContainer() {
         {/* Controls */}
         <NetworkSelector 
           selectedChain={selectedChain} 
-          onChainChange={setSelectedChain}
+          onChainChange={onChainChange}
           className="absolute top-4 left-4 z-10"
         />
         
@@ -102,6 +105,13 @@ export function SimpleMapContainer() {
           className="absolute bottom-4 left-4 z-10"
         />
 
+        {/* Contract info */}
+        <ContractInfo
+          chainId={selectedChain}
+          nodeCount={nodes.length}
+          className="absolute bottom-4 right-4 z-10 min-w-[280px]"
+        />
+
         {/* Map */}
         <Map
           {...viewState}
@@ -114,7 +124,7 @@ export function SimpleMapContainer() {
           {/* Energy monitoring nodes as markers */}
           {nodes.map((node) => {
             const [lat, lon] = parseLocation(node.location);
-            const usage = 1000 + Math.random() * 4000; // Mock usage
+            const usage = (node as any).latestUsage || (1000 + Math.random() * 4000); // Use real usage data
             
             let color = '#22c55e'; // Green for low usage
             if (usage > 3000) color = '#ef4444'; // Red for high usage

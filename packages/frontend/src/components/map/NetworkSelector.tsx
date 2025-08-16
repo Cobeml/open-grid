@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ChevronDown, Zap } from 'lucide-react';
+import { ChevronDown, Zap, ExternalLink, Database } from 'lucide-react';
 import { SUPPORTED_CHAINS, getAllChainIds } from '@/lib/wagmi';
 import { cn } from '@/lib/utils';
 
@@ -15,6 +15,26 @@ interface NetworkSelectorProps {
 export function NetworkSelector({ selectedChain, onChainChange, className }: NetworkSelectorProps) {
   const supportedChainIds = getAllChainIds();
   const selectedChainConfig = SUPPORTED_CHAINS[selectedChain as keyof typeof SUPPORTED_CHAINS];
+
+  const getExplorerUrl = (chainId: number, address: string) => {
+    const explorerMap: Record<number, string> = {
+      1: 'https://etherscan.io',
+      137: 'https://polygonscan.com', 
+      42161: 'https://arbiscan.io',
+      10: 'https://optimistic.etherscan.io',
+      8453: 'https://basescan.org',
+      43114: 'https://snowtrace.io',
+      56: 'https://bscscan.com',
+      100: 'https://gnosisscan.io',
+      80002: 'https://amoy.polygonscan.com', // Polygon Amoy
+      48900: 'https://explorer.zircuit.com',
+      14: 'https://flare-explorer.flare.network',
+      295: 'https://hashscan.io/mainnet',
+    };
+    
+    const baseUrl = explorerMap[chainId];
+    return baseUrl ? `${baseUrl}/address/${address}` : null;
+  };
 
   return (
     <div className={cn('min-w-[200px]', className)}>
@@ -44,19 +64,44 @@ export function NetworkSelector({ selectedChain, onChainChange, className }: Net
         {/* Chain indicator */}
         {selectedChainConfig && (
           <motion.div 
-            className="flex items-center gap-2 px-3 py-1 mt-1 border-t border-gray-700"
+            className="flex flex-col gap-1 px-3 py-2 mt-1 border-t border-gray-700"
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <div 
-              className="w-2 h-2 rounded-full" 
-              style={{ backgroundColor: selectedChainConfig.color }}
-            />
-            <span className="text-xs text-gray-300">
-              Chain ID: {selectedChain}
-            </span>
-            <Zap className="w-3 h-3 text-energy-400 ml-auto" />
+            <div className="flex items-center gap-2">
+              <div 
+                className="w-2 h-2 rounded-full" 
+                style={{ backgroundColor: selectedChainConfig.color }}
+              />
+              <span className="text-xs text-gray-300">
+                Chain ID: {selectedChain}
+              </span>
+              <Zap className="w-3 h-3 text-energy-400 ml-auto" />
+            </div>
+            
+            {/* Contract deployment info */}
+            {selectedChainConfig.contractAddress ? (
+              <div className="flex items-center gap-1">
+                <Database className="w-3 h-3 text-green-400" />
+                <span className="text-xs text-green-400">Contract:</span>
+                <a
+                  href={getExplorerUrl(selectedChain, selectedChainConfig.contractAddress) || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-green-400 hover:text-green-300 truncate max-w-[100px] flex items-center gap-1"
+                  title={selectedChainConfig.contractAddress}
+                >
+                  {selectedChainConfig.contractAddress.slice(0, 6)}...{selectedChainConfig.contractAddress.slice(-4)}
+                  <ExternalLink className="w-2 h-2" />
+                </a>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1">
+                <Database className="w-3 h-3 text-gray-500" />
+                <span className="text-xs text-gray-500">No contract deployed</span>
+              </div>
+            )}
           </motion.div>
         )}
       </div>

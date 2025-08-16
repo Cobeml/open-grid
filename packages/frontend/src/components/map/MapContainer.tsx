@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { useChainId } from 'wagmi';
 import { MapProvider } from 'react-map-gl';
 import { Loader2, Settings, Layers, Zap } from 'lucide-react';
-import { MAPBOX_ACCESS_TOKEN, INITIAL_VIEW_STATE } from '@/lib/constants';
+import { MAPBOX_ACCESS_TOKEN, INITIAL_VIEW_STATE, DEFAULT_MAP_STYLE } from '@/lib/constants';
 import { useEnergyData } from '@/hooks/useEnergyData';
 import { NetworkSelector } from './NetworkSelector';
 import { MapControls } from './MapControls';
@@ -47,16 +47,16 @@ export function MapContainer() {
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
   const [showHeatmap, setShowHeatmap] = useState(true);
   const [showTooltips, setShowTooltips] = useState(true);
-  const [mapStyle, setMapStyle] = useState('mapbox://styles/mapbox/dark-v11');
-  const [selectedNode, setSelectedNode] = useState(null);
+  const [mapStyle, setMapStyle] = useState<string>(DEFAULT_MAP_STYLE);
+  const [selectedNode, setSelectedNode] = useState<any>(null);
 
   const { nodes, isLoading, totalUsage, activeNodes, error } = useEnergyData(selectedChain);
 
-  const handleViewStateChange = useCallback(({ viewState: newViewState }) => {
+  const handleViewStateChange = useCallback(({ viewState: newViewState }: { viewState: any }) => {
     setViewState(newViewState);
   }, []);
 
-  const handleNodeClick = useCallback((info) => {
+  const handleNodeClick = useCallback((info: any) => {
     if (info.object && showTooltips) {
       setSelectedNode(info.object);
     }
@@ -76,11 +76,11 @@ export function MapContainer() {
         new HeatmapLayer({
           id: 'energy-heatmap',
           data: nodes,
-          getPosition: (d) => {
+          getPosition: (d: any) => {
             const [lat, lon] = parseLocation(d.location);
             return [lon, lat];
           },
-          getWeight: (d) => Math.log(Math.max(1000, 1)),
+          getWeight: (d: any) => Math.log(Math.max(1000, 1)),
           radiusPixels: 80,
           intensity: 2,
           threshold: 0.03,
@@ -101,15 +101,15 @@ export function MapContainer() {
       new ScatterplotLayer({
         id: 'energy-nodes',
         data: nodes,
-        getPosition: (d) => {
+        getPosition: (d: any) => {
           const [lat, lon] = parseLocation(d.location);
           return [lon, lat];
         },
-        getRadius: (d) => {
+        getRadius: (d: any) => {
           const baseRadius = Math.sqrt(Math.max(1000, 100)) * 0.8;
           return Math.max(baseRadius, 500);
         },
-        getFillColor: (d) => {
+        getFillColor: (d: any) => {
           if (!d.active) return [156, 163, 175, 180]; // Gray for inactive
           const usage = 1000 + Math.random() * 4000; // Mock usage
           if (usage > 3000) return [239, 68, 68, 200]; // High usage - red

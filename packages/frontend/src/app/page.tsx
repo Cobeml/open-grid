@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useAccount } from 'wagmi';
+import { useAccount, useChainId } from 'wagmi';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Header } from '@/components/layout/Header';
 import { SimpleMapContainer } from '@/components/map/SimpleMapContainer';
@@ -11,7 +11,9 @@ import { Zap, Activity, Map, BarChart3 } from 'lucide-react';
 
 export default function HomePage() {
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
   const [viewMode, setViewMode] = useState<'map' | 'dashboard'>('map');
+  const [selectedChain, setSelectedChain] = useState(chainId || 137);
 
   if (!isConnected) {
     return (
@@ -142,7 +144,17 @@ export default function HomePage() {
             transition={{ duration: 0.3 }}
             className="h-full"
           >
-            {viewMode === 'map' ? <SimpleMapContainer /> : <Dashboard />}
+            {viewMode === 'map' ? (
+              <SimpleMapContainer 
+                selectedChain={selectedChain} 
+                onChainChange={setSelectedChain} 
+              />
+            ) : (
+              <Dashboard 
+                selectedChain={selectedChain} 
+                onChainChange={setSelectedChain} 
+              />
+            )}
           </motion.div>
         </AnimatePresence>
       </main>

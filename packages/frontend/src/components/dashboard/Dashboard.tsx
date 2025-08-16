@@ -1,18 +1,22 @@
 'use client';
 
 import React from 'react';
-import { useChainId } from 'wagmi';
 import { motion } from 'framer-motion';
 import { useEnergyData } from '@/hooks/useEnergyData';
+import { NetworkSelector } from '@/components/map/NetworkSelector';
 import { MetricCards } from './MetricCards';
 import { UsageChart } from './UsageChart';
 import { NodeList } from './NodeList';
 import { AlertPanel } from './AlertPanel';
 import { Loader2 } from 'lucide-react';
 
-export function Dashboard() {
-  const chainId = useChainId();
-  const { nodes, latestData, isLoading, totalUsage, activeNodes } = useEnergyData(chainId);
+interface DashboardProps {
+  selectedChain?: number;
+  onChainChange?: (chainId: number) => void;
+}
+
+export function Dashboard({ selectedChain, onChainChange }: DashboardProps) {
+  const { nodes, latestData, isLoading, totalUsage, activeNodes } = useEnergyData(selectedChain || 137);
 
   if (isLoading) {
     return (
@@ -27,6 +31,16 @@ export function Dashboard() {
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
+      {/* Network Selector */}
+      {onChainChange && (
+        <div className="flex justify-end">
+          <NetworkSelector 
+            selectedChain={selectedChain || 137} 
+            onChainChange={onChainChange}
+          />
+        </div>
+      )}
+
       {/* Metrics Cards */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -56,7 +70,7 @@ export function Dashboard() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <AlertPanel chainId={chainId} />
+          <AlertPanel chainId={selectedChain || 137} />
         </motion.div>
       </div>
 

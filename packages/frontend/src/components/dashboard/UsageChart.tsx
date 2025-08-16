@@ -15,12 +15,12 @@ interface UsageChartProps {
 export function UsageChart({ data, nodes }: UsageChartProps) {
   const chartData = useMemo(() => {
     // Group data by node and get latest readings
-    const nodeUsage = new Map<number, { node: NodeData; latestUsage: number; timestamp: number }>();
+    const nodeUsage = new Map<string, { node: NodeData; latestUsage: number; timestamp: number }>();
     
     data.forEach(reading => {
       const existing = nodeUsage.get(reading.nodeId);
       if (!existing || reading.timestamp > existing.timestamp) {
-        const node = nodes.find(n => n.id === reading.nodeId);
+        const node = nodes.find(n => n.id.toString() === reading.nodeId);
         if (node) {
           nodeUsage.set(reading.nodeId, {
             node,
