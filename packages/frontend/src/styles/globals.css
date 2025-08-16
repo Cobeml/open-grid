@@ -1,0 +1,210 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --energy-50: #f0fdf4;
+  --energy-100: #dcfce7;
+  --energy-200: #bbf7d0;
+  --energy-300: #86efac;
+  --energy-400: #4ade80;
+  --energy-500: #22c55e;
+  --energy-600: #16a34a;
+  --energy-700: #15803d;
+  --energy-800: #166534;
+  --energy-900: #14532d;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4b5563;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
+/* Mapbox overrides */
+.mapboxgl-popup {
+  font-family: 'Inter', sans-serif;
+}
+
+.mapboxgl-popup-content {
+  background: #1f2937 !important;
+  color: white !important;
+  border: 1px solid #374151 !important;
+  border-radius: 8px !important;
+  padding: 0 !important;
+}
+
+.mapboxgl-popup-close-button {
+  color: #9ca3af !important;
+  font-size: 18px !important;
+  padding: 8px !important;
+}
+
+.mapboxgl-popup-close-button:hover {
+  color: white !important;
+  background: #374151 !important;
+}
+
+.mapboxgl-popup-tip {
+  border-top-color: #1f2937 !important;
+}
+
+/* Energy grid background animation */
+@keyframes gridMove {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 20px 20px;
+  }
+}
+
+.bg-energy-grid {
+  background-size: 20px 20px;
+  animation: gridMove 20s linear infinite;
+}
+
+/* Loading animations */
+@keyframes pulse-energy {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.05);
+  }
+}
+
+.animate-pulse-energy {
+  animation: pulse-energy 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes bounce-slow {
+  0%, 100% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 3s infinite;
+}
+
+/* Tooltip styles */
+.tooltip-content {
+  background: #1f2937;
+  color: white;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Chart overrides */
+.recharts-tooltip-wrapper {
+  background: #1f2937 !important;
+  border: 1px solid #374151 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.recharts-default-tooltip {
+  background: #1f2937 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  color: white !important;
+}
+
+/* Rainbow Kit overrides */
+[data-rk] {
+  --rk-colors-accent: var(--energy-500);
+  --rk-colors-accentColor: var(--energy-500);
+  --rk-colors-accentColorForeground: white;
+}
+
+/* Custom utilities */
+.text-shadow-glow {
+  text-shadow: 0 0 10px currentColor;
+}
+
+.shadow-energy {
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+}
+
+.border-energy {
+  border-color: var(--energy-500);
+}
+
+.bg-energy-gradient {
+  background: linear-gradient(135deg, var(--energy-500), var(--energy-600));
+}
+
+/* Focus styles for accessibility */
+.focus-energy:focus {
+  outline: 2px solid var(--energy-500);
+  outline-offset: 2px;
+}
+
+/* Responsive design helpers */
+@media (max-width: 768px) {
+  .mobile-hidden {
+    display: none;
+  }
+}
+
+@media (min-width: 769px) {
+  .desktop-hidden {
+    display: none;
+  }
+}
