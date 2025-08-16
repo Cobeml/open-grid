@@ -125,6 +125,24 @@ const config: HardhatUserConfig = {
       chainId: 295,
       gasPrice: "auto",
     },
+    hederaTestnet: {
+      url: process.env.HEDERA_TESTNET_RPC_URL || "https://testnet.hashio.io/api",
+      accounts: getValidPrivateKey(),
+      chainId: 296,
+      gasPrice: "auto",
+    },
+    flow: {
+      url: process.env.FLOW_TESTNET_RPC_URL || "https://access-testnet.onflow.org",
+      accounts: getValidPrivateKey(),
+      chainId: 545,
+      gasPrice: "auto",
+    },
+    flowMainnet: {
+      url: process.env.FLOW_MAINNET_RPC_URL || "https://access-mainnet-beta.onflow.org",
+      accounts: getValidPrivateKey(),
+      chainId: 122,
+      gasPrice: "auto",
+    },
 
     // Testnets
     sepolia: {
@@ -161,6 +179,12 @@ const config: HardhatUserConfig = {
       url: process.env.BASE_GOERLI_RPC_URL || "https://goerli.base.org",
       accounts: getValidPrivateKey(),
       chainId: 84531,
+      gasPrice: "auto",
+    },
+    baseSepolia: {
+      url: process.env.BASE_SEPOLIA_RPC_URL || "https://sepolia.base.org",
+      accounts: getValidPrivateKey(),
+      chainId: 84532,
       gasPrice: "auto",
     },
     fuji: {

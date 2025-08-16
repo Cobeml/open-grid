@@ -5,16 +5,16 @@ import * as dotenv from "dotenv";
 dotenv.config({ path: "../../../.env" });
 
 async function main() {
-  console.log("🚀 Deploying EnergyMonitor contract to Polygon Amoy testnet...");
+  console.log("🚀 Deploying EnergyMonitorLegacy contract...");
   
   // Get deployment parameters from environment
-  const functionsRouter = process.env.POLYGON_AMOY_FUNCTIONS_ROUTER || "0xC22a79eBA640940ABB6dF0f7982cc119578E11De";
-  const subscriptionId = process.env.POLYGON_SUBSCRIPTIONS_ID || "1";
+  const functionsRouter = process.env.FUNCTIONS_ROUTER || "0x0000000000000000000000000000000000000000"; // Mock address
+  const subscriptionId = process.env.SUBSCRIPTION_ID || "1";
   const gasLimit = 300000;
-  const donId = ethers.id("fun-polygon-amoy-1");
+  const donId = ethers.keccak256(ethers.toUtf8Bytes("mock-don-1"));
   
   console.log("📋 Deployment Configuration:");
-  console.log(`   Functions Router: ${functionsRouter}`);
+  console.log(`   Functions Router: ${functionsRouter} (mock)`);
   console.log(`   Subscription ID: ${subscriptionId}`);
   console.log(`   Gas Limit: ${gasLimit}`);
   console.log(`   DON ID: ${donId}`);
@@ -25,24 +25,25 @@ async function main() {
   
   // Check account balance
   const balance = await ethers.provider.getBalance(deployer.address);
-  console.log(`💰 Account balance: ${ethers.formatEther(balance)} MATIC`);
+  console.log(`💰 Account balance: ${ethers.formatEther(balance)} ETH/MATIC/etc`);
   
-  if (balance < ethers.parseEther("0.01")) {
-    console.warn("⚠️  Warning: Low balance. You may need more MATIC for deployment.");
+  if (balance < ethers.parseEther("0.001")) {
+    console.warn("⚠️  Warning: Low balance. You may need more tokens for deployment.");
   }
   
   // Deploy the contract with optimized gas settings
-  const EnergyMonitor = await ethers.getContractFactory("EnergyMonitor");
+  const EnergyMonitorLegacy = await ethers.getContractFactory("EnergyMonitorLegacy");
   
   console.log("\n⏳ Deploying contract...");
-  const energyMonitor = await EnergyMonitor.deploy(
+  const energyMonitor = await EnergyMonitorLegacy.deploy(
     functionsRouter,
     parseInt(subscriptionId),
     gasLimit,
     donId,
     {
-      gasLimit: 3000000, // Set explicit gas limit
-      gasPrice: ethers.parseUnits("30", "gwei") // Lower gas price
+      gasLimit: 1500000, // Even lower gas limit
+      maxFeePerGas: ethers.parseUnits("30", "gwei"), // Meet minimum requirements
+      maxPriorityFeePerGas: ethers.parseUnits("25", "gwei"), // Meet minimum tip requirement
     }
   );
   
@@ -51,9 +52,8 @@ async function main() {
   await energyMonitor.waitForDeployment();
   
   const contractAddress = await energyMonitor.getAddress();
-  console.log(`\n✅ EnergyMonitor deployed successfully!`);
+  console.log(`\n✅ EnergyMonitorLegacy deployed successfully!`);
   console.log(`📍 Contract Address: ${contractAddress}`);
-  console.log(`🔗 Explorer: https://amoy.polygonscan.com/address/${contractAddress}`);
   
   // Verify contract ownership
   const owner = await energyMonitor.owner();
@@ -70,7 +70,7 @@ async function main() {
   
   // Save deployment info
   const deploymentInfo = {
-    network: "polygonAmoy",
+    network: "legacy-compatible",
     contractAddress: contractAddress,
     deployer: deployer.address,
     functionsRouter: functionsRouter,
@@ -78,7 +78,7 @@ async function main() {
     gasLimit: gasLimit,
     donId: donId,
     deploymentTime: new Date().toISOString(),
-    explorerUrl: `https://amoy.polygonscan.com/address/${contractAddress}`
+    note: "Legacy version - deployable on ANY EVM chain"
   };
   
   console.log("\n📝 Deployment Summary:");
@@ -87,7 +87,7 @@ async function main() {
   console.log("\n🎉 Deployment complete! You can now:");
   console.log("   1. Update your frontend .env.local with the contract address");
   console.log("   2. Test contract functionality using the frontend");
-  console.log("   3. Monitor transactions on Polygon Amoy explorer");
+  console.log("   3. This version works on ANY EVM chain (no Chainlink required)");
 }
 
 main()

@@ -8,38 +8,30 @@ across EVM-compatible networks.
 
 Architecture
 
-- EnergyMonitor.sol: Main contract for storing energy data using Chainlink
-Functions
+- SimpleEnergyMonitorWithChainlink.sol: Real Chainlink Functions integration
+- EnergyMonitorLegacy.sol: Mock Chainlink integration (deployable anywhere)
 - Multi-chain deployment: Supports Polygon, Arbitrum, Optimism, Base,
-Avalanche, BNB Chain, Gnosis Chain
+Avalanche, BNB Chain, Gnosis Chain, Flow EVM, and more
 - Chainlink Integration: Uses Chainlink Functions for secure off-chain data
-ingestion
+ingestion (Chainlink version only)
 
 Package Structure
 
 packages/contracts/
 ├── package.json
 ├── hardhat.config.ts
-├── .env.example
+├── LEGACY_VS_CHAINLINK.md
 ├── contracts/
-│   ├── EnergyMonitor.sol
-│   └── interfaces/
-│       └── IEnergyMonitor.sol
-├── deploy/
-│   ├── 01-deploy-energy-monitor.ts
-│   └── utils/
-│       └── deploy-helpers.ts
+│   ├── SimpleEnergyMonitorWithChainlink.sol  # Real Chainlink integration
+│   ├── EnergyMonitorLegacy.sol               # Mock Chainlink integration
+│   └── mocks/
+│       └── MockFunctionsRouter.sol           # Mock router for testing
 ├── scripts/
-│   ├── deploy-multi-chain.ts
-│   ├── setup-chainlink.ts
-│   └── verify-contracts.ts
+│   ├── deploy-chainlink-functions.js         # Chainlink deployment
+│   └── deploy-legacy.ts                      # Legacy deployment
 ├── test/
-│   ├── EnergyMonitor.test.ts
-│   └── fixtures/
-│       └── deployment.ts
-├── tasks/
-│   ├── accounts.ts
-│   └── deploy.ts
+│   ├── SimpleEnergyMonitorWithChainlink.test.js  # Chainlink tests
+│   └── EnergyMonitorLegacy.test.js               # Legacy tests
 └── typechain-types/
 
 Dependencies

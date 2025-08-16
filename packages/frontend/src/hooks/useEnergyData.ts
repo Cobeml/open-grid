@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { useReadContract, useWatchContractEvent } from 'wagmi';
+import { useWatchContractEvent } from 'wagmi';
 import { toast } from 'react-hot-toast';
 import { ethers } from 'ethers';
 import { EnergyNode, EnergyData, NodeData } from '@/types/energy';
 import { SUPPORTED_CHAINS } from '@/lib/wagmi';
 import { REFRESH_INTERVALS } from '@/lib/constants';
+import { useContractData } from './useContractData';
 
 // Mock ABI for demonstration - replace with actual contract ABI
 const ENERGY_MONITOR_ABI = [
@@ -22,11 +23,20 @@ const ENERGY_MONITOR_ABI = [
     ]
   },
   {
-    "name": "getActiveNodes",
+    "name": "getAllNodes",
     "type": "function",
     "stateMutability": "view",
     "inputs": [],
-    "outputs": [{ "name": "", "type": "uint256[]" }]
+    "outputs": [{ 
+      "name": "", 
+      "type": "tuple[]",
+      "components": [
+        { "name": "location", "type": "string" },
+        { "name": "active", "type": "bool" },
+        { "name": "registeredAt", "type": "uint256" },
+        { "name": "lastUpdate", "type": "uint256" }
+      ]
+    }]
   },
   {
     "name": "getNodeData",
@@ -90,16 +100,13 @@ export function useEnergyData(chainId: number) {
     },
   ], [chainId]);
 
-  // Contract reads (REAL DATA ONLY - no mock fallback)
-  const { data: contractData, isError, error: contractError } = useReadContract({
-    address: contractAddress,
-    abi: ENERGY_MONITOR_ABI,
-    functionName: 'getActiveNodes',
-    query: {
-      enabled: !!contractAddress,
-      refetchInterval: REFRESH_INTERVALS.ENERGY_DATA,
-    },
-  });
+  // Use custom hook to read contract data directly from target network
+  const { data: contractData, isLoading: contractLoading, error: contractError } = useContractData(chainId);
+
+  // Debug contract errors
+  if (contractError) {
+    console.error('Contract read error:', contractError);
+  }
 
 
 
@@ -172,7 +179,7 @@ export function useEnergyData(chainId: number) {
 
   // Initialize data from real contract
   useEffect(() => {
-    setIsLoading(true);
+    setIsLoading(contractLoading);
     setError(null);
 
     const initializeData = async () => {
@@ -195,17 +202,24 @@ export function useEnergyData(chainId: number) {
         }
 
         if (contractData && Array.isArray(contractData)) {
-          console.log(`Found ${contractData.length} active nodes on contract`);
+          console.log(`Found ${contractData.length} nodes on contract`);
+          console.log('Contract data:', contractData);
           
-          // Fetch detailed data for each node
-          const nodePromises = contractData.map(async (nodeId: bigint) => {
-            return await fetchNodeData(Number(nodeId));
-          });
-          
-          const nodeResults = await Promise.all(nodePromises);
-          const validNodes = nodeResults.filter(node => node !== null);
+          // Process the Node structs directly from getAllNodes()
+          const validNodes = contractData
+            .map((node: any, index: number) => ({
+              id: index,
+              location: node.location || 'lat:40.7128,lon:-74.0060',
+              active: node.active,
+              registeredAt: Number(node.registeredAt),
+              lastUpdate: Number(node.lastUpdate),
+              latestUsage: 0 // Will be fetched separately if needed
+            }))
+            .filter((node: any) => node.active);
           
           console.log(`Successfully loaded ${validNodes.length} nodes with data`);
+          
+          // Set the nodes first
           setNodes(validNodes);
           
           // Generate some initial energy data for visualization
@@ -243,7 +257,7 @@ export function useEnergyData(chainId: number) {
     };
 
     initializeData();
-  }, [chainId, contractData, contractAddress]);
+  }, [chainId, contractData, contractAddress, contractLoading]);
 
   // Simulate real-time updates for mock data (when no contract)
   useEffect(() => {
@@ -267,7 +281,7 @@ export function useEnergyData(chainId: number) {
           }));
         
         setLatestData(prev => [...mockData, ...prev.slice(0, 50)]);
-      }, 30000); // Update every 30 seconds
+      }, 600000); // Update every 10 minutes
 
       return () => clearInterval(interval);
     }
