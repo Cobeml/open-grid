@@ -174,10 +174,10 @@ export function MapContainer() {
 
         {/* Map */}
         <DeckGL
-          initialViewState={INITIAL_VIEW_STATE}
           controller={true}
           layers={layers}
           onViewStateChange={handleViewStateChange}
+          viewState={viewState as any}
           getTooltip={({ object }) => {
             if (!object || !showTooltips) return null;
             return {

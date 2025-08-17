@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
   transpilePackages: ['@deck.gl/react', '@deck.gl/layers', '@deck.gl/core'],
   webpack: (config) => {
     config.externals.push('pino-pretty', 'lokijs', 'encoding');
