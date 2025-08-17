@@ -1,9 +1,8 @@
 {
-  "buildCommand": "cd packages/frontend && npm ci && npm run build",
+  "buildCommand": "ls -la && pwd && yarn install && cd packages/frontend && yarn build",
   "outputDirectory": "packages/frontend/.next",
   "framework": "nextjs",
   "regions": ["iad1"],
-  "installCommand": "npm ci",
   "functions": {
     "packages/frontend/pages/api/**/*.js": {
       "maxDuration": 30
