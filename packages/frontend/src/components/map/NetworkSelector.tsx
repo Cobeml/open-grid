@@ -23,6 +23,7 @@ export function NetworkSelector({ selectedChain, onChainChange, className }: Net
       42161: 'https://arbiscan.io',
       10: 'https://optimistic.etherscan.io',
       8453: 'https://basescan.org',
+      84532: 'https://sepolia.basescan.org', // Base Sepolia
       43114: 'https://snowtrace.io',
       56: 'https://bscscan.com',
       100: 'https://gnosisscan.io',
@@ -30,6 +31,7 @@ export function NetworkSelector({ selectedChain, onChainChange, className }: Net
       48900: 'https://explorer.zircuit.com',
       14: 'https://flare-explorer.flare.network',
       295: 'https://hashscan.io/mainnet',
+      296: 'https://hashscan.io/testnet', // Hedera Testnet
     };
     
     const baseUrl = explorerMap[chainId];

@@ -1,0 +1,26 @@
+{
+  "contractName": "EnergyDataSenderPolygonAmoy",
+  "network": "Polygon Amoy",
+  "chainId": 80002,
+  "contractAddress": "0x1A57C0132A00d93ef1f1BC07B12E8aF4a1932c29",
+  "layerzeroEndpoint": "0x6EDCE65403992e310A62460808c4b910D972f10f",
+  "energyMonitorContract": "0x5853a99Aa16BBcabe1EA1a92c09F984643c04fdB",
+  "deployer": "0xeab37f66842BeAF8591935BaBbEDfaF1301b7a61",
+  "deployedAt": "2025-08-17T03:44:54.049Z",
+  "explorerUrl": "https://amoy.polygonscan.com/address/0x1A57C0132A00d93ef1f1BC07B12E8aF4a1932c29",
+  "configuration": {
+    "destinationChain": "Base Sepolia",
+    "destinationEID": 40245,
+    "sourceEID": 40267,
+    "autoSyncEnabled": false,
+    "syncInterval": 3600,
+    "maxDataPointsPerSync": 100
+  },
+  "nextSteps": [
+    "Deploy receiver contract on Base Sepolia",
+    "Configure destination contract address",
+    "Set up peer relationships",
+    "Test cross-chain messaging",
+    "Enable auto-sync if desired"
+  ]
+}

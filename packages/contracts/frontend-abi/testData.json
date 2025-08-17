@@ -1,0 +1,114 @@
+{
+  "sampleNodes": [
+    {
+      "id": 0,
+      "name": "Times Square Hub",
+      "location": "lat:40.7580,lon:-73.9855",
+      "coordinates": {
+        "latitude": 40.758,
+        "longitude": -73.9855
+      },
+      "active": true,
+      "type": "commercial",
+      "district": "Manhattan"
+    },
+    {
+      "id": 1,
+      "name": "Wall Street Station",
+      "location": "lat:40.7074,lon:-74.0113",
+      "coordinates": {
+        "latitude": 40.7074,
+        "longitude": -74.0113
+      },
+      "active": true,
+      "type": "financial",
+      "district": "Manhattan"
+    },
+    {
+      "id": 2,
+      "name": "Empire State Building",
+      "location": "lat:40.7484,lon:-73.9857",
+      "coordinates": {
+        "latitude": 40.7484,
+        "longitude": -73.9857
+      },
+      "active": true,
+      "type": "commercial",
+      "district": "Manhattan"
+    },
+    {
+      "id": 3,
+      "name": "NYC Center",
+      "location": "lat:40.7128,lon:-74.0060",
+      "coordinates": {
+        "latitude": 40.7128,
+        "longitude": -74.006
+      },
+      "active": true,
+      "type": "mixed",
+      "district": "Manhattan"
+    },
+    {
+      "id": 4,
+      "name": "Broadway District",
+      "location": "lat:40.7589,lon:-73.9851",
+      "coordinates": {
+        "latitude": 40.7589,
+        "longitude": -73.9851
+      },
+      "active": true,
+      "type": "entertainment",
+      "district": "Manhattan"
+    }
+  ],
+  "sampleEnergyData": [
+    {
+      "nodeId": "0",
+      "kWh": "2500",
+      "timestamp": "1755389506",
+      "location": "lat:40.7580,lon:-73.9855",
+      "dataQuality": 95
+    },
+    {
+      "nodeId": "1",
+      "kWh": "3200",
+      "timestamp": "1755385906",
+      "location": "lat:40.7074,lon:-74.0113",
+      "dataQuality": 98
+    }
+  ],
+  "mockEvents": [
+    {
+      "event": "DataUpdated",
+      "dataId": "1",
+      "nodeId": "0",
+      "kWh": "3000",
+      "location": "lat:40.7580,lon:74.60",
+      "timestamp": "1755389348"
+    },
+    {
+      "event": "NodeRegistered",
+      "nodeId": "0",
+      "location": "lat:40.7580,lon:-73.9855",
+      "name": "Times Square Hub"
+    }
+  ],
+  "testResults": {
+    "legacyContract": {
+      "deployed": true,
+      "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+      "nodesRegistered": 5,
+      "dataPointsCreated": 1,
+      "eventsEmitted": true,
+      "lastTestTimestamp": "2025-08-17T00:11:46.840Z"
+    },
+    "chainlinkContract": {
+      "deployed": true,
+      "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "nodesRegistered": 5,
+      "dataPointsCreated": 0,
+      "eventsEmitted": "partial",
+      "lastTestTimestamp": "2025-08-17T00:11:46.840Z"
+    }
+  }
+}

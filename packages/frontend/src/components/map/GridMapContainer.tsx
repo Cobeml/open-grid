@@ -16,55 +16,55 @@ import { MAPBOX_ACCESS_TOKEN, INITIAL_VIEW_STATE, DEFAULT_MAP_STYLE } from '@/li
 // NYC Grid Network Data (imported from backend)
 const NYC_GRID_EDGES = [
   // Downtown Core
-  { id: 1, source: 1, target: 2, type: "high_voltage", capacity: 500 },
-  { id: 2, source: 1, target: 3, type: "high_voltage", capacity: 500 },
-  { id: 3, source: 2, target: 3, type: "medium_voltage", capacity: 300 },
-  { id: 4, source: 3, target: 4, type: "high_voltage", capacity: 500 },
-  { id: 5, source: 4, target: 5, type: "medium_voltage", capacity: 300 },
+  { id: 1, source: 1, target: 2, type: "high_voltage", capacity: 500, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 2, source: 1, target: 3, type: "high_voltage", capacity: 500, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 3, source: 2, target: 3, type: "medium_voltage", capacity: 300, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 4, source: 3, target: 4, type: "high_voltage", capacity: 500, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 5, source: 4, target: 5, type: "medium_voltage", capacity: 300, currentLoad: 0, status: "active", utilization: 0 },
   
   // Downtown to Midtown
-  { id: 6, source: 5, target: 6, type: "high_voltage", capacity: 800 },
-  { id: 7, source: 5, target: 7, type: "high_voltage", capacity: 800 },
+  { id: 6, source: 5, target: 6, type: "high_voltage", capacity: 800, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 7, source: 5, target: 7, type: "high_voltage", capacity: 800, currentLoad: 0, status: "active", utilization: 0 },
   
   // Midtown Grid
-  { id: 8, source: 6, target: 7, type: "high_voltage", capacity: 600 },
-  { id: 9, source: 6, target: 8, type: "medium_voltage", capacity: 400 },
-  { id: 10, source: 7, target: 8, type: "high_voltage", capacity: 600 },
-  { id: 11, source: 6, target: 9, type: "medium_voltage", capacity: 300 },
-  { id: 12, source: 7, target: 10, type: "medium_voltage", capacity: 300 },
-  { id: 13, source: 8, target: 11, type: "medium_voltage", capacity: 300 },
-  { id: 14, source: 8, target: 12, type: "medium_voltage", capacity: 300 },
+  { id: 8, source: 6, target: 7, type: "high_voltage", capacity: 600, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 9, source: 6, target: 8, type: "medium_voltage", capacity: 400, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 10, source: 7, target: 8, type: "high_voltage", capacity: 600, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 11, source: 6, target: 9, type: "medium_voltage", capacity: 300, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 12, source: 7, target: 10, type: "medium_voltage", capacity: 300, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 13, source: 8, target: 11, type: "medium_voltage", capacity: 300, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 14, source: 8, target: 12, type: "medium_voltage", capacity: 300, currentLoad: 0, status: "active", utilization: 0 },
   
   // Cross-Borough Connections
-  { id: 15, source: 2, target: 19, type: "high_voltage", capacity: 800 },
-  { id: 16, source: 19, target: 20, type: "medium_voltage", capacity: 400 },
-  { id: 17, source: 20, target: 21, type: "medium_voltage", capacity: 400 },
-  { id: 18, source: 21, target: 22, type: "medium_voltage", capacity: 400 },
-  { id: 19, source: 22, target: 23, type: "high_voltage", capacity: 500 },
-  { id: 20, source: 23, target: 24, type: "high_voltage", capacity: 600 },
+  { id: 15, source: 2, target: 19, type: "high_voltage", capacity: 800, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 16, source: 19, target: 20, type: "medium_voltage", capacity: 400, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 17, source: 20, target: 21, type: "medium_voltage", capacity: 400, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 18, source: 21, target: 22, type: "medium_voltage", capacity: 400, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 19, source: 22, target: 23, type: "high_voltage", capacity: 500, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 20, source: 23, target: 24, type: "high_voltage", capacity: 600, currentLoad: 0, status: "active", utilization: 0 },
   
   // Queens Connections
-  { id: 21, source: 21, target: 25, type: "high_voltage", capacity: 600 },
-  { id: 22, source: 25, target: 26, type: "medium_voltage", capacity: 400 },
-  { id: 23, source: 26, target: 27, type: "high_voltage", capacity: 500 },
-  { id: 24, source: 27, target: 28, type: "high_voltage", capacity: 600 },
+  { id: 21, source: 21, target: 25, type: "high_voltage", capacity: 600, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 22, source: 25, target: 26, type: "medium_voltage", capacity: 400, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 23, source: 26, target: 27, type: "high_voltage", capacity: 500, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 24, source: 27, target: 28, type: "high_voltage", capacity: 600, currentLoad: 0, status: "active", utilization: 0 },
   
   // Bronx Connections
-  { id: 25, source: 18, target: 29, type: "high_voltage", capacity: 600 },
-  { id: 26, source: 29, target: 30, type: "medium_voltage", capacity: 400 },
+  { id: 25, source: 18, target: 29, type: "high_voltage", capacity: 600, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 26, source: 29, target: 30, type: "medium_voltage", capacity: 400, currentLoad: 0, status: "active", utilization: 0 },
   
   // Staten Island
-  { id: 27, source: 2, target: 31, type: "high_voltage", capacity: 800 },
-  { id: 28, source: 31, target: 32, type: "medium_voltage", capacity: 400 },
+  { id: 27, source: 2, target: 31, type: "high_voltage", capacity: 800, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 28, source: 31, target: 32, type: "medium_voltage", capacity: 400, currentLoad: 0, status: "active", utilization: 0 },
   
   // Airport Connections
-  { id: 29, source: 28, target: 33, type: "high_voltage", capacity: 700 },
-  { id: 30, source: 33, target: 34, type: "high_voltage", capacity: 800 },
+  { id: 29, source: 28, target: 33, type: "high_voltage", capacity: 700, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 30, source: 33, target: 34, type: "high_voltage", capacity: 800, currentLoad: 0, status: "active", utilization: 0 },
   
   // Central Hub Connections
-  { id: 31, source: 8, target: 35, type: "high_voltage", capacity: 1000 },
-  { id: 32, source: 35, target: 7, type: "high_voltage", capacity: 1000 },
-  { id: 33, source: 35, target: 6, type: "high_voltage", capacity: 1000 },
+  { id: 31, source: 8, target: 35, type: "high_voltage", capacity: 1000, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 32, source: 35, target: 7, type: "high_voltage", capacity: 1000, currentLoad: 0, status: "active", utilization: 0 },
+  { id: 33, source: 35, target: 6, type: "high_voltage", capacity: 1000, currentLoad: 0, status: "active", utilization: 0 },
 ];
 
 
@@ -100,7 +100,8 @@ export function GridMapContainer({ selectedChain, onChainChange }: GridMapContai
   const mapNodes = useMemo(() => {
     return nodes.map((node, index) => {
       const [lon, lat] = parseLocation(node.location);
-      const usage = node.currentUsage || (1000 + Math.random() * 4000);
+      // Generate random usage since NodeData doesn't have currentUsage
+      const usage = (1000 + Math.random() * 4000);
       
       let color = '#22c55e'; // Green for low usage
       if (usage > 3000) color = '#ef4444'; // Red for high usage
@@ -111,11 +112,14 @@ export function GridMapContainer({ selectedChain, onChainChange }: GridMapContai
       return {
         ...node,
         id: index,
+        name: `Node ${node.id}`,
+        zone: 'Unknown',
         position: [lon, lat] as [number, number],
         size: Math.max(8, Math.min(20, Math.sqrt(usage) / 10)),
         color,
-        currentUsage: usage
-      };
+        currentUsage: usage,
+        connections: []
+      } as MapNode;
     });
   }, [nodes, parseLocation]);
 
@@ -129,7 +133,8 @@ export function GridMapContainer({ selectedChain, onChainChange }: GridMapContai
       
       if (!sourceNode || !targetNode) return null;
       
-      const utilization = (edge.currentLoad || Math.random() * edge.capacity) / edge.capacity;
+      const currentLoad = Math.random() * edge.capacity;
+      const utilization = currentLoad / edge.capacity;
       let color = '#22c55e'; // Green for low utilization
       if (utilization > 0.8) color = '#ef4444'; // Red for high utilization
       else if (utilization > 0.6) color = '#f59e0b'; // Amber for medium utilization
@@ -138,9 +143,9 @@ export function GridMapContainer({ selectedChain, onChainChange }: GridMapContai
         id: edge.id,
         source: edge.source,
         target: edge.target,
-        type: edge.type,
+        type: edge.type as 'high_voltage' | 'medium_voltage' | 'low_voltage',
         capacity: edge.capacity,
-        currentLoad: edge.currentLoad || Math.random() * edge.capacity,
+        currentLoad,
         status: utilization > 0.9 ? 'overloaded' : 'active',
         utilization,
         sourcePosition: sourceNode.position,
@@ -148,7 +153,7 @@ export function GridMapContainer({ selectedChain, onChainChange }: GridMapContai
         width: edge.type === 'high_voltage' ? 3 : edge.type === 'medium_voltage' ? 2 : 1,
         color,
         animated: utilization > 0.7
-      };
+      } as MapEdge;
     }).filter(Boolean) as MapEdge[];
   }, [mapNodes, showEdges]);
 
@@ -161,7 +166,19 @@ export function GridMapContainer({ selectedChain, onChainChange }: GridMapContai
     if (nodeId) {
       const node = mapNodes.find(n => n.id.toString() === nodeId);
       if (node) {
-        setSelectedNode(selectedNode?.id === node.id ? null : node);
+        // Convert MapNode to GridNode for the popup
+        const gridNode: GridNode = {
+          id: node.id,
+          name: node.name,
+          location: node.location,
+          zone: node.zone,
+          active: node.active,
+          registeredAt: node.registeredAt,
+          lastUpdate: node.lastUpdate,
+          currentUsage: node.currentUsage,
+          status: node.status
+        };
+        setSelectedNode(selectedNode?.id === node.id ? null : gridNode);
         setSelectedEdge(null);
       }
     }
@@ -172,7 +189,18 @@ export function GridMapContainer({ selectedChain, onChainChange }: GridMapContai
     if (feature) {
       const edge = mapEdges.find(e => e.id === feature.properties.id);
       if (edge) {
-        setSelectedEdge(selectedEdge?.id === edge.id ? null : edge);
+        // Convert MapEdge to GridEdge for the popup
+        const gridEdge: GridEdge = {
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          type: edge.type,
+          capacity: edge.capacity,
+          currentLoad: edge.currentLoad,
+          status: edge.status,
+          utilization: edge.utilization
+        };
+        setSelectedEdge(selectedEdge?.id === edge.id ? null : gridEdge);
         setSelectedNode(null);
       }
     }
@@ -405,10 +433,8 @@ export function GridMapContainer({ selectedChain, onChainChange }: GridMapContai
                   </span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-gray-400">Usage:</span>
-                  <span className="text-white">
-                    {selectedNode.currentUsage ? `${selectedNode.currentUsage.toFixed(0)} kWh` : "N/A"}
-                  </span>
+                  <span className="text-gray-400">Zone:</span>
+                  <span className="text-white">{selectedNode.zone}</span>
                 </div>
                 <div className="text-xs text-gray-400">
                   {selectedNode.location}
@@ -419,50 +445,56 @@ export function GridMapContainer({ selectedChain, onChainChange }: GridMapContai
         )}
 
         {/* Edge Popup */}
-        {selectedEdge && (
-          <Popup
-            longitude={(selectedEdge.sourcePosition[0] + selectedEdge.targetPosition[0]) / 2}
-            latitude={(selectedEdge.sourcePosition[1] + selectedEdge.targetPosition[1]) / 2}
-            anchor="center"
-            onClose={() => setSelectedEdge(null)}
-            className="z-20"
-          >
-            <Card className="w-56 bg-gray-900 border-gray-700">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-white flex items-center gap-2">
-                  <Zap className="w-4 h-4" />
-                  Transmission Line
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-400">Type:</span>
-                  <Badge variant="outline" className="text-xs">
-                    {selectedEdge.type.replace('_', ' ')}
-                  </Badge>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-400">Capacity:</span>
-                  <span className="text-white">{selectedEdge.capacity} MW</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-400">Load:</span>
-                  <span className="text-white">{selectedEdge.currentLoad.toFixed(0)} MW</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-400">Utilization:</span>
-                  <span className="text-white">{(selectedEdge.utilization * 100).toFixed(1)}%</span>
-                </div>
-                <div className="flex justify-between text-xs">
-                  <span className="text-gray-400">Status:</span>
-                  <Badge variant={selectedEdge.status === 'active' ? "default" : "destructive"}>
-                    {selectedEdge.status}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-          </Popup>
-        )}
+        {selectedEdge && (() => {
+          const mapEdge = mapEdges.find(e => e.id === selectedEdge.id);
+          const longitude = mapEdge ? (mapEdge.sourcePosition[0] + mapEdge.targetPosition[0]) / 2 : -74.006;
+          const latitude = mapEdge ? (mapEdge.sourcePosition[1] + mapEdge.targetPosition[1]) / 2 : 40.7128;
+          
+          return (
+            <Popup
+              longitude={longitude}
+              latitude={latitude}
+              anchor="center"
+              onClose={() => setSelectedEdge(null)}
+              className="z-20"
+            >
+              <Card className="w-56 bg-gray-900 border-gray-700">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm text-white flex items-center gap-2">
+                    <Zap className="w-4 h-4" />
+                    Transmission Line
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-400">Type:</span>
+                    <Badge variant="outline" className="text-xs">
+                      {selectedEdge.type.replace('_', ' ')}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-400">Capacity:</span>
+                    <span className="text-white">{selectedEdge.capacity} MW</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-400">Load:</span>
+                    <span className="text-white">{selectedEdge.currentLoad.toFixed(0)} MW</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-400">Utilization:</span>
+                    <span className="text-white">{(selectedEdge.utilization * 100).toFixed(1)}%</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-gray-400">Status:</span>
+                    <Badge variant={selectedEdge.status === 'active' ? "default" : "destructive"}>
+                      {selectedEdge.status}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            </Popup>
+          );
+        })()}
       </Map>
     </div>
   );

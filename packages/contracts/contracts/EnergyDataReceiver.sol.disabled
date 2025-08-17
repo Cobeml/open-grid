@@ -1,0 +1,437 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+import {OApp, Origin} from "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol";
+
+/**
+ * @title EnergyDataReceiver
+ * @dev LayerZero receiver contract for NYC energy data
+ * Receives data from ChainlinkEnergyMonitorOApp and provides same interface for frontend
+ */
+contract EnergyDataReceiver is OApp {
+    
+    // Data structures (identical to source contract for compatibility)
+    struct Node {
+        string location;
+        bool active;
+        uint256 registeredAt;
+    }
+
+    struct EnergyData {
+        uint256 timestamp;
+        uint256 kWh;
+        string location;
+        uint256 nodeId;
+    }
+
+    struct Edge {
+        uint256 from;
+        uint256 to;
+        string edgeType;
+        uint256 capacity;
+        uint256 distance;
+        bool active;
+        uint256 registeredAt;
+    }
+
+    // Core storage
+    Node[] public nodes;
+    EnergyData[] public dataPoints;
+    mapping(uint256 => EnergyData[]) public nodeData;
+    uint256 public nodeCount;
+    uint256 public dataCount;
+
+    // Edge storage
+    Edge[] public edges;
+    mapping(uint256 => uint256[]) public nodeEdges; // nodeId => edgeIds
+    uint256 public edgeCount;
+
+    // LayerZero configuration
+    uint32 public sourceChainEid;
+    address public sourceContract;
+    uint256 public lastUpdateTime;
+    uint256 public totalBroadcastsReceived;
+
+    // Events (identical signatures for frontend compatibility)
+    event NodeRegistered(uint256 indexed nodeId, string location);
+    event EdgeRegistered(uint256 indexed edgeId, uint256 indexed from, uint256 indexed to, string edgeType);
+    event EdgeDeactivated(uint256 indexed edgeId);
+    event EdgeReactivated(uint256 indexed edgeId);
+    event DataUpdated(uint256 indexed dataId, uint256 indexed nodeId, uint256 kWh, string location, uint256 timestamp);
+    event CrossChainDataReceived(uint32 indexed srcEid, address indexed srcContract, uint256 dataCount);
+    event SourceConfigured(uint32 indexed srcEid, address indexed srcContract);
+
+    constructor(
+        address _endpoint,
+        address _owner
+    ) OApp(_endpoint, _owner) {}
+
+    /**
+     * @dev Configure the source chain and contract
+     */
+    function configureSource(uint32 _sourceChainEid, address _sourceContract) external onlyOwner {
+        sourceChainEid = _sourceChainEid;
+        sourceContract = _sourceContract;
+        emit SourceConfigured(_sourceChainEid, _sourceContract);
+    }
+
+    /**
+     * @dev LayerZero message handler - receives energy data from source chain
+     */
+    function _lzReceive(
+        Origin calldata _origin,
+        bytes32 _guid,
+        bytes calldata _message,
+        address _executor,
+        bytes calldata _extraData
+    ) internal override {
+        // Verify message is from authorized source
+        require(_origin.srcEid == sourceChainEid, "Unauthorized source chain");
+        require(_origin.sender == bytes32(uint256(uint160(sourceContract))), "Unauthorized source contract");
+        
+        // Decode the energy data array
+        EnergyData[] memory newData = abi.decode(_message, (EnergyData[]));
+        
+        // Process each data point
+        for (uint256 i = 0; i < newData.length; i++) {
+            EnergyData memory energyData = newData[i];
+            
+            // Ensure node exists, create if necessary
+            _ensureNodeExists(energyData.nodeId, energyData.location);
+            
+            // Store the data
+            dataPoints.push(energyData);
+            nodeData[energyData.nodeId].push(energyData);
+            
+            // Emit event with same signature as source contract
+            emit DataUpdated(
+                dataCount,
+                energyData.nodeId,
+                energyData.kWh,
+                energyData.location,
+                energyData.timestamp
+            );
+            
+            dataCount++;
+        }
+        
+        lastUpdateTime = block.timestamp;
+        totalBroadcastsReceived++;
+        
+        emit CrossChainDataReceived(sourceChainEid, sourceContract, newData.length);
+    }
+
+    /**
+     * @dev Ensure node exists in local storage, create if missing
+     */
+    function _ensureNodeExists(uint256 nodeId, string memory location) internal {
+        // Extend nodes array if necessary
+        while (nodeCount <= nodeId) {
+            nodes.push(Node({
+                location: nodeCount == nodeId ? location : "",
+                active: nodeCount == nodeId,
+                registeredAt: block.timestamp
+            }));
+            
+            if (nodeCount == nodeId) {
+                emit NodeRegistered(nodeId, location);
+            }
+            
+            nodeCount++;
+        }
+        
+        // Update location if node exists but location is empty
+        if (bytes(nodes[nodeId].location).length == 0 && bytes(location).length > 0) {
+            nodes[nodeId].location = location;
+            nodes[nodeId].active = true;
+        }
+    }
+
+    /**
+     * @dev Manually register nodes (for initial setup or missing nodes)
+     */
+    function registerNode(string memory location) external onlyOwner {
+        nodes.push(Node({
+            location: location,
+            active: true,
+            registeredAt: block.timestamp
+        }));
+        
+        uint256 nodeId = nodeCount;
+        nodeCount++;
+        
+        emit NodeRegistered(nodeId, location);
+    }
+
+    /**
+     * @dev Batch register multiple nodes
+     */
+    function batchRegisterNodes(string[] memory locations) external onlyOwner {
+        for (uint256 i = 0; i < locations.length; i++) {
+            nodes.push(Node({
+                location: locations[i],
+                active: true,
+                registeredAt: block.timestamp
+            }));
+            
+            emit NodeRegistered(nodeCount, locations[i]);
+            nodeCount++;
+        }
+    }
+
+    /**
+     * @dev Register a new edge connection between nodes
+     */
+    function registerEdge(
+        uint256 from,
+        uint256 to,
+        string memory edgeType,
+        uint256 capacity,
+        uint256 distance
+    ) external onlyOwner {
+        require(from < nodeCount, "Invalid from node ID");
+        require(to < nodeCount, "Invalid to node ID");
+        require(from != to, "Cannot connect node to itself");
+        
+        edges.push(Edge({
+            from: from,
+            to: to,
+            edgeType: edgeType,
+            capacity: capacity,
+            distance: distance,
+            active: true,
+            registeredAt: block.timestamp
+        }));
+        
+        uint256 edgeId = edgeCount;
+        edgeCount++;
+        
+        // Add edge to both nodes' edge lists
+        nodeEdges[from].push(edgeId);
+        nodeEdges[to].push(edgeId);
+        
+        emit EdgeRegistered(edgeId, from, to, edgeType);
+    }
+
+    /**
+     * @dev Batch register multiple edges
+     */
+    function batchRegisterEdges(
+        uint256[] memory fromNodes,
+        uint256[] memory toNodes,
+        string[] memory edgeTypes,
+        uint256[] memory capacities,
+        uint256[] memory distances
+    ) external onlyOwner {
+        require(fromNodes.length == toNodes.length, "Array length mismatch");
+        require(fromNodes.length == edgeTypes.length, "Array length mismatch");
+        require(fromNodes.length == capacities.length, "Array length mismatch");
+        require(fromNodes.length == distances.length, "Array length mismatch");
+        
+        for (uint256 i = 0; i < fromNodes.length; i++) {
+            require(fromNodes[i] < nodeCount, "Invalid from node ID");
+            require(toNodes[i] < nodeCount, "Invalid to node ID");
+            require(fromNodes[i] != toNodes[i], "Cannot connect node to itself");
+            
+            edges.push(Edge({
+                from: fromNodes[i],
+                to: toNodes[i],
+                edgeType: edgeTypes[i],
+                capacity: capacities[i],
+                distance: distances[i],
+                active: true,
+                registeredAt: block.timestamp
+            }));
+            
+            uint256 edgeId = edgeCount;
+            edgeCount++;
+            
+            // Add edge to both nodes' edge lists
+            nodeEdges[fromNodes[i]].push(edgeId);
+            nodeEdges[toNodes[i]].push(edgeId);
+            
+            emit EdgeRegistered(edgeId, fromNodes[i], toNodes[i], edgeTypes[i]);
+        }
+    }
+
+    // View functions (identical to source contract for frontend compatibility)
+    
+    /**
+     * @dev Get all registered nodes
+     */
+    function getAllNodes() external view returns (Node[] memory) {
+        return nodes;
+    }
+
+    /**
+     * @dev Get all registered edges
+     */
+    function getAllEdges() external view returns (Edge[] memory) {
+        return edges;
+    }
+
+    /**
+     * @dev Get edges connected to a specific node
+     */
+    function getNodeEdges(uint256 nodeId) external view returns (Edge[] memory) {
+        require(nodeId < nodeCount, "Invalid node ID");
+        
+        uint256[] memory edgeIds = nodeEdges[nodeId];
+        Edge[] memory nodeEdgeList = new Edge[](edgeIds.length);
+        
+        for (uint256 i = 0; i < edgeIds.length; i++) {
+            nodeEdgeList[i] = edges[edgeIds[i]];
+        }
+        
+        return nodeEdgeList;
+    }
+
+    /**
+     * @dev Get specific edge by ID
+     */
+    function getEdge(uint256 edgeId) external view returns (Edge memory) {
+        require(edgeId < edgeCount, "Invalid edge ID");
+        return edges[edgeId];
+    }
+
+    /**
+     * @dev Get latest data for a specific node
+     */
+    function getLatestDataForNode(uint256 nodeId) external view returns (EnergyData memory) {
+        require(nodeId < nodeCount, "Invalid node ID");
+        EnergyData[] memory nodeDataArray = nodeData[nodeId];
+        require(nodeDataArray.length > 0, "No data for node");
+        return nodeDataArray[nodeDataArray.length - 1];
+    }
+
+    /**
+     * @dev Get data within time range
+     */
+    function getDataInTimeRange(uint256 startTime, uint256 endTime) external view returns (EnergyData[] memory) {
+        require(startTime <= endTime, "Invalid time range");
+        
+        // Count matching entries
+        uint256 count = 0;
+        for (uint256 i = 0; i < dataCount; i++) {
+            if (dataPoints[i].timestamp >= startTime && dataPoints[i].timestamp <= endTime) {
+                count++;
+            }
+        }
+        
+        // Build result array
+        EnergyData[] memory result = new EnergyData[](count);
+        uint256 index = 0;
+        for (uint256 i = 0; i < dataCount; i++) {
+            if (dataPoints[i].timestamp >= startTime && dataPoints[i].timestamp <= endTime) {
+                result[index] = dataPoints[i];
+                index++;
+            }
+        }
+        
+        return result;
+    }
+
+    /**
+     * @dev Get data for specific node within time range
+     */
+    function getNodeDataInTimeRange(
+        uint256 nodeId, 
+        uint256 startTime, 
+        uint256 endTime
+    ) external view returns (EnergyData[] memory) {
+        require(nodeId < nodeCount, "Invalid node ID");
+        require(startTime <= endTime, "Invalid time range");
+        
+        EnergyData[] memory nodeDataArray = nodeData[nodeId];
+        
+        // Count matching entries
+        uint256 count = 0;
+        for (uint256 i = 0; i < nodeDataArray.length; i++) {
+            if (nodeDataArray[i].timestamp >= startTime && nodeDataArray[i].timestamp <= endTime) {
+                count++;
+            }
+        }
+        
+        // Build result array
+        EnergyData[] memory result = new EnergyData[](count);
+        uint256 index = 0;
+        for (uint256 i = 0; i < nodeDataArray.length; i++) {
+            if (nodeDataArray[i].timestamp >= startTime && nodeDataArray[i].timestamp <= endTime) {
+                result[index] = nodeDataArray[i];
+                index++;
+            }
+        }
+        
+        return result;
+    }
+
+    /**
+     * @dev Get recent data points (last N entries)
+     */
+    function getRecentData(uint256 count) external view returns (EnergyData[] memory) {
+        if (count > dataCount) count = dataCount;
+        if (count == 0) return new EnergyData[](0);
+        
+        EnergyData[] memory result = new EnergyData[](count);
+        uint256 startIndex = dataCount - count;
+        
+        for (uint256 i = 0; i < count; i++) {
+            result[i] = dataPoints[startIndex + i];
+        }
+        
+        return result;
+    }
+
+    /**
+     * @dev Get statistics about received data
+     */
+    function getStats() external view returns (
+        uint256 totalNodes,
+        uint256 totalDataPoints,
+        uint256 lastUpdate,
+        uint256 totalBroadcasts,
+        uint32 sourceChain,
+        address sourceAddr
+    ) {
+        return (
+            nodeCount,
+            dataCount,
+            lastUpdateTime,
+            totalBroadcastsReceived,
+            sourceChainEid,
+            sourceContract
+        );
+    }
+
+    /**
+     * @dev Check if node has recent data (within last 24 hours)
+     */
+    function hasRecentData(uint256 nodeId) external view returns (bool) {
+        if (nodeId >= nodeCount) return false;
+        
+        EnergyData[] memory nodeDataArray = nodeData[nodeId];
+        if (nodeDataArray.length == 0) return false;
+        
+        EnergyData memory latestData = nodeDataArray[nodeDataArray.length - 1];
+        return (block.timestamp - latestData.timestamp) <= 86400; // 24 hours
+    }
+
+    /**
+     * @dev Get data count for specific node
+     */
+    function getNodeDataCount(uint256 nodeId) external view returns (uint256) {
+        if (nodeId >= nodeCount) return 0;
+        return nodeData[nodeId].length;
+    }
+
+    /**
+     * @dev Check contract health
+     */
+    function isHealthy() external view returns (bool) {
+        return (
+            nodeCount > 0 && 
+            dataCount > 0 && 
+            (block.timestamp - lastUpdateTime) <= 7200 // Data within last 2 hours
+        );
+    }
+}

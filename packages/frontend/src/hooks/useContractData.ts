@@ -39,7 +39,9 @@ const NETWORK_RPC_URLS = {
   80002: 'https://rpc-amoy.polygon.technology', // Polygon Amoy
   545: 'https://access-testnet.onflow.org', // Flow Testnet
   11155111: 'https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161', // Sepolia
+  8453: 'https://mainnet.base.org', // Base Mainnet
   84532: 'https://sepolia.base.org', // Base Sepolia
+  295: 'https://mainnet.hashio.io/api', // Hedera Mainnet
   296: 'https://testnet.hashio.io/api', // Hedera Testnet
 } as const;
 

@@ -30,6 +30,16 @@ contract EnergyMonitor is Ownable, FunctionsClient {
         uint256 lastUpdate; // Timestamp of last data update
     }
 
+    struct Edge {
+        uint256 from;
+        uint256 to;
+        string edgeType;
+        uint256 capacity;
+        uint256 distance;
+        bool active;
+        uint256 registeredAt;
+    }
+
     // State variables (same as legacy)
     mapping(uint256 => Node) public nodes;
     mapping(uint256 => EnergyData[]) public nodeData;
@@ -37,6 +47,11 @@ contract EnergyMonitor is Ownable, FunctionsClient {
 
     uint256 public nodeCount;
     uint256 public dataCount;
+
+    // Edge storage
+    Edge[] public edges;
+    mapping(uint256 => uint256[]) public nodeEdges; // nodeId => edgeIds
+    uint256 public edgeCount;
 
     // Chainlink Functions variables
     bytes32 public s_lastRequestId;
@@ -74,6 +89,9 @@ contract EnergyMonitor is Ownable, FunctionsClient {
     event NodeRegistered(uint256 indexed nodeId, string location);
     event NodeDeactivated(uint256 indexed nodeId);
     event NodeReactivated(uint256 indexed nodeId);
+    event EdgeRegistered(uint256 indexed edgeId, uint256 indexed from, uint256 indexed to, string edgeType);
+    event EdgeDeactivated(uint256 indexed edgeId);
+    event EdgeReactivated(uint256 indexed edgeId);
     event DataUpdated(
         uint256 indexed dataId,
         uint256 indexed nodeId,
@@ -81,7 +99,7 @@ contract EnergyMonitor is Ownable, FunctionsClient {
         string location,
         uint256 timestamp
     );
-    event RequestSent(bytes32 indexed requestId);
+    event ChainlinkRequestSent(bytes32 indexed requestId);
     event ResponseReceived(bytes32 indexed requestId, bytes response, bytes err);
 
     constructor() FunctionsClient(ROUTER) Ownable(msg.sender) {}
@@ -128,6 +146,60 @@ contract EnergyMonitor is Ownable, FunctionsClient {
     }
 
     /**
+     * @notice Register a new edge connection between nodes
+     */
+    function registerEdge(
+        uint256 from,
+        uint256 to,
+        string memory edgeType,
+        uint256 capacity,
+        uint256 distance
+    ) external onlyOwner {
+        require(from < nodeCount, "Invalid from node ID");
+        require(to < nodeCount, "Invalid to node ID");
+        require(from != to, "Cannot connect node to itself");
+        
+        edges.push(Edge({
+            from: from,
+            to: to,
+            edgeType: edgeType,
+            capacity: capacity,
+            distance: distance,
+            active: true,
+            registeredAt: block.timestamp
+        }));
+        
+        uint256 edgeId = edgeCount;
+        edgeCount++;
+        
+        // Add edge to both nodes' edge lists
+        nodeEdges[from].push(edgeId);
+        nodeEdges[to].push(edgeId);
+        
+        emit EdgeRegistered(edgeId, from, to, edgeType);
+    }
+
+    /**
+     * @notice Deactivate an edge connection
+     */
+    function deactivateEdge(uint256 edgeId) external onlyOwner {
+        require(edgeId < edgeCount, "Invalid edge ID");
+        
+        edges[edgeId].active = false;
+        emit EdgeDeactivated(edgeId);
+    }
+
+    /**
+     * @notice Reactivate an edge connection
+     */
+    function reactivateEdge(uint256 edgeId) external onlyOwner {
+        require(edgeId < edgeCount, "Invalid edge ID");
+        
+        edges[edgeId].active = true;
+        emit EdgeReactivated(edgeId);
+    }
+
+    /**
      * @notice Send Chainlink Functions request to generate mock time-series data
      * @param subscriptionId The Chainlink Functions subscription ID
      * @dev Uses inline JS source to generate cycling mock data for all nodes
@@ -148,7 +220,7 @@ contract EnergyMonitor is Ownable, FunctionsClient {
             DON_ID
         );
 
-        emit RequestSent(s_lastRequestId);
+        emit ChainlinkRequestSent(s_lastRequestId);
     }
 
     /**
@@ -176,9 +248,21 @@ contract EnergyMonitor is Ownable, FunctionsClient {
         uint256 entryCount = response.length / 24;  // 8+8+8=24 bytes per entry
         for (uint256 i = 0; i < entryCount; i++) {
             uint256 offset = i * 24;
-            uint256 nodeId = uint256(bytes8(response[offset:offset+8]));
-            uint256 timestamp = uint256(bytes8(response[offset+8:offset+16]));
-            uint256 kWh = uint256(bytes8(response[offset+16:offset+24]));
+            
+            // Extract 8-byte chunks and convert to uint256
+            bytes memory nodeIdBytes = new bytes(8);
+            bytes memory timestampBytes = new bytes(8);
+            bytes memory kWhBytes = new bytes(8);
+            
+            for (uint256 j = 0; j < 8; j++) {
+                nodeIdBytes[j] = response[offset + j];
+                timestampBytes[j] = response[offset + 8 + j];
+                kWhBytes[j] = response[offset + 16 + j];
+            }
+            
+            uint256 nodeId = uint256(bytes32(nodeIdBytes) >> 192);
+            uint256 timestamp = uint256(bytes32(timestampBytes) >> 192);
+            uint256 kWh = uint256(bytes32(kWhBytes) >> 192);
 
             if (nodeId >= nodeCount) continue;
 
@@ -215,6 +299,28 @@ contract EnergyMonitor is Ownable, FunctionsClient {
             allNodes[i] = nodes[i];
         }
         return allNodes;
+    }
+
+    function getAllEdges() external view returns (Edge[] memory) {
+        return edges;
+    }
+
+    function getNodeEdges(uint256 nodeId) external view returns (Edge[] memory) {
+        require(nodeId < nodeCount, "Invalid node ID");
+        
+        uint256[] memory edgeIds = nodeEdges[nodeId];
+        Edge[] memory nodeEdgeList = new Edge[](edgeIds.length);
+        
+        for (uint256 i = 0; i < edgeIds.length; i++) {
+            nodeEdgeList[i] = edges[edgeIds[i]];
+        }
+        
+        return nodeEdgeList;
+    }
+
+    function getEdge(uint256 edgeId) external view returns (Edge memory) {
+        require(edgeId < edgeCount, "Invalid edge ID");
+        return edges[edgeId];
     }
 
     /**

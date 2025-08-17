@@ -35,16 +35,41 @@ async function main() {
   const EnergyMonitorLegacy = await ethers.getContractFactory("EnergyMonitorLegacy");
   
   console.log("\n⏳ Deploying contract...");
+  
+  // Get network info to determine gas settings
+  const network = await ethers.provider.getNetwork();
+  console.log(`🌐 Network Chain ID: ${network.chainId}`);
+  
+  // Hedera-specific gas settings
+  let gasSettings = {};
+  if (network.chainId === 296n) { // Hedera Testnet
+    console.log("🎯 Using Hedera Testnet gas settings");
+    gasSettings = {
+      gasLimit: 1500000,
+      gasPrice: ethers.parseUnits("400", "gwei"), // Above minimum 350 gwei
+    };
+  } else if (network.chainId === 295n) { // Hedera Mainnet
+    console.log("🎯 Using Hedera Mainnet gas settings");
+    gasSettings = {
+      gasLimit: 1500000,
+      gasPrice: ethers.parseUnits("400", "gwei"),
+    };
+  } else {
+    // Default EIP-1559 settings for other networks
+    console.log("🎯 Using default EIP-1559 gas settings");
+    gasSettings = {
+      gasLimit: 1500000,
+      maxFeePerGas: ethers.parseUnits("30", "gwei"),
+      maxPriorityFeePerGas: ethers.parseUnits("25", "gwei"),
+    };
+  }
+  
   const energyMonitor = await EnergyMonitorLegacy.deploy(
     functionsRouter,
     parseInt(subscriptionId),
     gasLimit,
     donId,
-    {
-      gasLimit: 1500000, // Even lower gas limit
-      maxFeePerGas: ethers.parseUnits("30", "gwei"), // Meet minimum requirements
-      maxPriorityFeePerGas: ethers.parseUnits("25", "gwei"), // Meet minimum tip requirement
-    }
+    gasSettings
   );
   
   // Wait for deployment

@@ -1,0 +1,437 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.19;
+
+import {OApp, Origin, MessagingFee} from "@layerzerolabs/oapp-evm/contracts/oapp/OApp.sol";
+import {MessagingReceipt} from "@layerzerolabs/oapp-evm/contracts/oapp/OAppSender.sol";
+import {OptionsBuilder} from "@layerzerolabs/oapp-evm/contracts/oapp/libs/OptionsBuilder.sol";
+import {FunctionsClient} from "@chainlink/contracts/src/v0.8/functions/dev/v1_0_0/FunctionsClient.sol";
+import {FunctionsRequest} from "@chainlink/contracts/src/v0.8/functions/dev/v1_0_0/libraries/FunctionsRequest.sol";
+
+/**
+ * @title ChainlinkEnergyMonitorOApp
+ * @dev LayerZero-enabled energy monitoring with Chainlink Functions
+ * Broadcasts NYC energy data to multiple chains via LayerZero
+ */
+contract ChainlinkEnergyMonitorOApp is FunctionsClient, OApp {
+    using FunctionsRequest for FunctionsRequest.Request;
+    using OptionsBuilder for bytes;
+
+    // Data structures (identical to ChainlinkEnergyMonitor for compatibility)
+    struct Node {
+        string location;
+        bool active;
+        uint256 registeredAt;
+    }
+
+    struct EnergyData {
+        uint256 timestamp;
+        uint256 kWh;
+        string location;
+        uint256 nodeId;
+    }
+
+    struct Edge {
+        uint256 from;
+        uint256 to;
+        string edgeType;
+        uint256 capacity;
+        uint256 distance;
+        bool active;
+        uint256 registeredAt;
+    }
+
+    // LayerZero configuration
+    struct CrossChainConfig {
+        uint32[] destinationChains;
+        bool autoBroadcast;
+        uint256 batchSize;
+        uint256 minBroadcastInterval;
+    }
+
+    // Core storage
+    Node[] public nodes;
+    EnergyData[] public dataPoints;
+    mapping(uint256 => EnergyData[]) public nodeData;
+    uint256 public nodeCount;
+    uint256 public dataCount;
+
+    // Edge storage
+    Edge[] public edges;
+    mapping(uint256 => uint256[]) public nodeEdges; // nodeId => edgeIds
+    uint256 public edgeCount;
+
+    // Chainlink configuration
+    bytes32 public donId;
+    uint64 public subscriptionId;
+    uint32 public gasLimit = 300000;
+    mapping(bytes32 => bool) public validRequests;
+
+    // LayerZero configuration
+    CrossChainConfig public crossChainConfig;
+    uint256 public lastBroadcastTime;
+    mapping(uint32 => bool) public authorizedDestinations;
+
+    // Events
+    event NodeRegistered(uint256 indexed nodeId, string location);
+    event EdgeRegistered(uint256 indexed edgeId, uint256 indexed from, uint256 indexed to, string edgeType);
+    event EdgeDeactivated(uint256 indexed edgeId);
+    event EdgeReactivated(uint256 indexed edgeId);
+    event DataUpdated(uint256 indexed dataId, uint256 indexed nodeId, uint256 kWh, string location, uint256 timestamp);
+    event ChainlinkRequestSent(bytes32 indexed requestId, uint64 subscriptionId);
+    event CrossChainBroadcast(uint32 indexed dstEid, uint256 dataCount, bytes32 guid);
+    event DestinationAuthorized(uint32 indexed dstEid, bool authorized);
+
+    // JavaScript source for Chainlink Functions
+    string public constant JAVASCRIPT_SOURCE = 
+        "// NYC Energy Data Fetcher for 35 nodes"
+        "const nodeIds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34];"
+        "const responses = [];"
+        "for (let i = 0; i < 3; i++) {"
+        "  const nodeId = nodeIds[Math.floor(Math.random() * nodeIds.length)];"
+        "  const timestamp = Math.floor(Date.now() / 1000) - (i * 3600);"
+        "  const baseKwh = 1000 + (nodeId * 100);"
+        "  const variation = Math.floor(Math.random() * 500);"
+        "  const kWh = baseKwh + variation;"
+        "  responses.push({ nodeId, timestamp, kWh });"
+        "}"
+        "const buffer = new ArrayBuffer(responses.length * 24);"
+        "const view = new DataView(buffer);"
+        "let offset = 0;"
+        "for (const res of responses) {"
+        "  view.setBigUint64(offset, BigInt(res.nodeId)); offset += 8;"
+        "  view.setBigUint64(offset, BigInt(res.timestamp)); offset += 8;"
+        "  view.setBigUint64(offset, BigInt(res.kWh)); offset += 8;"
+        "}"
+        "return new Uint8Array(buffer);";
+
+    constructor(
+        address _router,
+        address _endpoint,
+        address _owner,
+        bytes32 _donId
+    ) FunctionsClient(_router) OApp(_endpoint, _owner) {
+        donId = _donId;
+        
+        // Initialize with default cross-chain config
+        crossChainConfig.autoBroadcast = true;
+        crossChainConfig.batchSize = 10;
+        crossChainConfig.minBroadcastInterval = 3600; // 1 hour
+    }
+
+    /**
+     * @dev Register a new energy monitoring node
+     */
+    function registerNode(string memory location) external onlyOwner {
+        nodes.push(Node({
+            location: location,
+            active: true,
+            registeredAt: block.timestamp
+        }));
+        
+        uint256 nodeId = nodeCount;
+        nodeCount++;
+        
+        emit NodeRegistered(nodeId, location);
+    }
+
+    /**
+     * @dev Register a new edge connection between nodes
+     */
+    function registerEdge(
+        uint256 from,
+        uint256 to,
+        string memory edgeType,
+        uint256 capacity,
+        uint256 distance
+    ) external onlyOwner {
+        require(from < nodeCount, "Invalid from node ID");
+        require(to < nodeCount, "Invalid to node ID");
+        require(from != to, "Cannot connect node to itself");
+        
+        edges.push(Edge({
+            from: from,
+            to: to,
+            edgeType: edgeType,
+            capacity: capacity,
+            distance: distance,
+            active: true,
+            registeredAt: block.timestamp
+        }));
+        
+        uint256 edgeId = edgeCount;
+        edgeCount++;
+        
+        // Add edge to both nodes' edge lists
+        nodeEdges[from].push(edgeId);
+        nodeEdges[to].push(edgeId);
+        
+        emit EdgeRegistered(edgeId, from, to, edgeType);
+    }
+
+    /**
+     * @dev Deactivate an edge connection
+     */
+    function deactivateEdge(uint256 edgeId) external onlyOwner {
+        require(edgeId < edgeCount, "Invalid edge ID");
+        
+        edges[edgeId].active = false;
+        emit EdgeDeactivated(edgeId);
+    }
+
+    /**
+     * @dev Reactivate an edge connection
+     */
+    function reactivateEdge(uint256 edgeId) external onlyOwner {
+        require(edgeId < edgeCount, "Invalid edge ID");
+        
+        edges[edgeId].active = true;
+        emit EdgeReactivated(edgeId);
+    }
+
+    /**
+     * @dev Request energy data update via Chainlink Functions
+     */
+    function requestDataUpdate(uint64 _subscriptionId) external onlyOwner {
+        subscriptionId = _subscriptionId;
+        
+        FunctionsRequest.Request memory req;
+        req.initializeRequestForInlineJavaScript(JAVASCRIPT_SOURCE);
+        
+        bytes32 requestId = _sendRequest(
+            req.encodeCBOR(),
+            subscriptionId,
+            gasLimit,
+            donId
+        );
+        
+        validRequests[requestId] = true;
+        emit ChainlinkRequestSent(requestId, subscriptionId);
+    }
+
+    /**
+     * @dev Chainlink Functions callback
+     */
+    function fulfillRequest(bytes32 requestId, bytes memory response, bytes memory err) internal override {
+        require(validRequests[requestId], "Invalid request");
+        delete validRequests[requestId];
+        
+        if (err.length > 0) {
+            return; // Silently handle errors
+        }
+        
+        // Process the response data (same as ChainlinkEnergyMonitor)
+        uint256 responseLength = response.length;
+        require(responseLength % 24 == 0, "Invalid response format");
+        
+        uint256 numEntries = responseLength / 24;
+        EnergyData[] memory newData = new EnergyData[](numEntries);
+        
+        for (uint256 i = 0; i < numEntries; i++) {
+            uint256 offset = i * 24;
+            
+            uint256 nodeId = _extractUint256(response, offset);
+            uint256 timestamp = _extractUint256(response, offset + 8);
+            uint256 kWh = _extractUint256(response, offset + 16);
+            
+            require(nodeId < nodeCount, "Invalid node ID");
+            
+            EnergyData memory energyData = EnergyData({
+                timestamp: timestamp,
+                kWh: kWh,
+                location: nodes[nodeId].location,
+                nodeId: nodeId
+            });
+            
+            dataPoints.push(energyData);
+            nodeData[nodeId].push(energyData);
+            newData[i] = energyData;
+            
+            emit DataUpdated(dataCount, nodeId, kWh, nodes[nodeId].location, timestamp);
+            dataCount++;
+        }
+        
+        // Auto-broadcast to LayerZero destinations if enabled
+        if (crossChainConfig.autoBroadcast && 
+            block.timestamp >= lastBroadcastTime + crossChainConfig.minBroadcastInterval) {
+            _broadcastToDestinations(newData);
+        }
+    }
+
+    /**
+     * @dev Manually broadcast latest data to all destinations
+     */
+    function broadcastLatestData() external onlyOwner {
+        require(dataCount > 0, "No data to broadcast");
+        
+        // Get latest batch of data
+        uint256 batchSize = crossChainConfig.batchSize;
+        if (batchSize > dataCount) batchSize = dataCount;
+        
+        EnergyData[] memory latestData = new EnergyData[](batchSize);
+        for (uint256 i = 0; i < batchSize; i++) {
+            latestData[i] = dataPoints[dataCount - batchSize + i];
+        }
+        
+        _broadcastToDestinations(latestData);
+    }
+
+    /**
+     * @dev Internal function to broadcast data to LayerZero destinations
+     */
+    function _broadcastToDestinations(EnergyData[] memory data) internal {
+        if (crossChainConfig.destinationChains.length == 0) return;
+        
+        bytes memory payload = abi.encode(data);
+        bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(200000, 0);
+        
+        for (uint256 i = 0; i < crossChainConfig.destinationChains.length; i++) {
+            uint32 dstEid = crossChainConfig.destinationChains[i];
+            
+            if (!authorizedDestinations[dstEid]) continue;
+            
+            try this._lzSend(dstEid, payload, options, MessagingFee(0, 0), payable(msg.sender)) 
+            returns (MessagingReceipt memory receipt) {
+                emit CrossChainBroadcast(dstEid, data.length, receipt.guid);
+            } catch {
+                // Continue to next destination if one fails
+                continue;
+            }
+        }
+        
+        lastBroadcastTime = block.timestamp;
+    }
+
+    /**
+     * @dev External wrapper for _lzSend to handle try/catch
+     */
+    function _lzSend(
+        uint32 _dstEid,
+        bytes memory _payload,
+        bytes memory _options,
+        MessagingFee memory _fee,
+        address _refundAddress
+    ) external payable returns (MessagingReceipt memory) {
+        require(msg.sender == address(this), "Only self");
+        return super._lzSend(_dstEid, _payload, _options, _fee, _refundAddress);
+    }
+
+    /**
+     * @dev Configure LayerZero destinations
+     */
+    function setDestinationChains(uint32[] memory _destinationChains) external onlyOwner {
+        crossChainConfig.destinationChains = _destinationChains;
+        
+        // Authorize all new destinations
+        for (uint256 i = 0; i < _destinationChains.length; i++) {
+            authorizedDestinations[_destinationChains[i]] = true;
+            emit DestinationAuthorized(_destinationChains[i], true);
+        }
+    }
+
+    /**
+     * @dev Configure cross-chain broadcasting settings
+     */
+    function setCrossChainConfig(
+        bool _autoBroadcast,
+        uint256 _batchSize,
+        uint256 _minBroadcastInterval
+    ) external onlyOwner {
+        crossChainConfig.autoBroadcast = _autoBroadcast;
+        crossChainConfig.batchSize = _batchSize;
+        crossChainConfig.minBroadcastInterval = _minBroadcastInterval;
+    }
+
+    /**
+     * @dev Authorize/deauthorize destination chain
+     */
+    function setDestinationAuthorization(uint32 _dstEid, bool _authorized) external onlyOwner {
+        authorizedDestinations[_dstEid] = _authorized;
+        emit DestinationAuthorized(_dstEid, _authorized);
+    }
+
+    // View functions (with edge support for frontend compatibility)
+    function getAllNodes() external view returns (Node[] memory) {
+        return nodes;
+    }
+
+    function getAllEdges() external view returns (Edge[] memory) {
+        return edges;
+    }
+
+    function getNodeEdges(uint256 nodeId) external view returns (Edge[] memory) {
+        require(nodeId < nodeCount, "Invalid node ID");
+        
+        uint256[] memory edgeIds = nodeEdges[nodeId];
+        Edge[] memory nodeEdgeList = new Edge[](edgeIds.length);
+        
+        for (uint256 i = 0; i < edgeIds.length; i++) {
+            nodeEdgeList[i] = edges[edgeIds[i]];
+        }
+        
+        return nodeEdgeList;
+    }
+
+    function getEdge(uint256 edgeId) external view returns (Edge memory) {
+        require(edgeId < edgeCount, "Invalid edge ID");
+        return edges[edgeId];
+    }
+
+    function getLatestDataForNode(uint256 nodeId) external view returns (EnergyData memory) {
+        require(nodeId < nodeCount, "Invalid node ID");
+        EnergyData[] memory nodeDataArray = nodeData[nodeId];
+        require(nodeDataArray.length > 0, "No data for node");
+        return nodeDataArray[nodeDataArray.length - 1];
+    }
+
+    function getDataInTimeRange(uint256 startTime, uint256 endTime) external view returns (EnergyData[] memory) {
+        require(startTime <= endTime, "Invalid time range");
+        
+        uint256 count = 0;
+        for (uint256 i = 0; i < dataCount; i++) {
+            if (dataPoints[i].timestamp >= startTime && dataPoints[i].timestamp <= endTime) {
+                count++;
+            }
+        }
+        
+        EnergyData[] memory result = new EnergyData[](count);
+        uint256 index = 0;
+        for (uint256 i = 0; i < dataCount; i++) {
+            if (dataPoints[i].timestamp >= startTime && dataPoints[i].timestamp <= endTime) {
+                result[index] = dataPoints[i];
+                index++;
+            }
+        }
+        
+        return result;
+    }
+
+    /**
+     * @dev Extract uint256 from bytes at offset (same as ChainlinkEnergyMonitor)
+     */
+    function _extractUint256(bytes memory data, uint256 offset) internal pure returns (uint256) {
+        require(offset + 8 <= data.length, "Offset out of bounds");
+        
+        uint256 result = 0;
+        for (uint256 i = 0; i < 8; i++) {
+            result = (result << 8) | uint256(uint8(data[offset + i]));
+        }
+        return result;
+    }
+
+    /**
+     * @dev Estimate LayerZero message fee
+     */
+    function estimateFee(uint32 _dstEid, bytes memory _payload) external view returns (MessagingFee memory) {
+        bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(200000, 0);
+        return _quote(_dstEid, _payload, options, false);
+    }
+
+    /**
+     * @dev Withdraw contract balance
+     */
+    function withdraw() external onlyOwner {
+        payable(owner()).transfer(address(this).balance);
+    }
+
+    receive() external payable {}
+}

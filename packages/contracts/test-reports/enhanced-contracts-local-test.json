@@ -1,0 +1,99 @@
+{
+  "startTime": "2025-08-17T01:14:28.855Z",
+  "phase": "local_testing",
+  "tests": [
+    {
+      "name": "Deploy Local Contract",
+      "startTime": "2025-08-17T01:14:28.856Z",
+      "status": "passed",
+      "duration": 401,
+      "error": null,
+      "details": {
+        "contractAddress": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        "gasUsed": "estimated"
+      }
+    },
+    {
+      "name": "Basic Contract Functions",
+      "startTime": "2025-08-17T01:14:29.257Z",
+      "status": "passed",
+      "duration": 2,
+      "error": null,
+      "details": {
+        "initialNodeCount": "0",
+        "initialDataCount": "0",
+        "hasNodeFunctions": true,
+        "hasEdgeFunctions": true,
+        "hasViewFunctions": true
+      }
+    },
+    {
+      "name": "Node Registration",
+      "startTime": "2025-08-17T01:14:29.259Z",
+      "status": "passed",
+      "duration": 15,
+      "error": null,
+      "details": {
+        "initialCount": "0",
+        "finalCount": "10",
+        "successCount": 10,
+        "allNodesReturned": 10
+      }
+    },
+    {
+      "name": "Edge Registration",
+      "startTime": "2025-08-17T01:14:29.274Z",
+      "status": "passed",
+      "duration": 20,
+      "error": null,
+      "details": {
+        "initialCount": "0",
+        "finalCount": "15",
+        "successCount": 15,
+        "allEdgesReturned": 15,
+        "node0Connections": 5
+      }
+    },
+    {
+      "name": "Data Structure Compatibility",
+      "startTime": "2025-08-17T01:14:29.294Z",
+      "status": "passed",
+      "duration": 3,
+      "error": null,
+      "details": {
+        "nodeStructureValid": true,
+        "edgeStructureValid": true,
+        "frontendCompatible": true
+      }
+    },
+    {
+      "name": "Grid Topology Analysis",
+      "startTime": "2025-08-17T01:14:29.297Z",
+      "status": "passed",
+      "duration": 3,
+      "error": null,
+      "details": {
+        "totalNodes": "10",
+        "totalEdges": "15",
+        "avgConnections": "3.00",
+        "maxConnections": 5,
+        "minConnections": 2,
+        "hubNodes": 6
+      }
+    }
+  ],
+  "summary": {
+    "total": 6,
+    "passed": 6,
+    "failed": 0
+  },
+  "endTime": "2025-08-17T01:14:29.300Z",
+  "totalDuration": 445,
+  "contract": {
+    "address": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+    "deployer": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    "nodeCount": "10",
+    "edgeCount": "15"
+  }
+}

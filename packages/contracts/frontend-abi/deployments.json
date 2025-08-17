@@ -1,0 +1,43 @@
+{
+  "version": "1.0.0",
+  "deployedAt": "2025-08-17T00:11:46.828Z",
+  "networks": {
+    "localhost": {
+      "name": "Hardhat Local",
+      "chainId": 31337,
+      "rpcUrl": "http://localhost:8545",
+      "explorer": "N/A",
+      "contracts": {
+        "EnergyMonitorLegacy": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+        "SimpleEnergyMonitorWithChainlink": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+        "ChainlinkEnergyMonitor": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1"
+      }
+    },
+    "polygonAmoy": {
+      "name": "Polygon Amoy",
+      "chainId": 80002,
+      "rpcUrl": "https://rpc-amoy.polygon.technology",
+      "explorer": "https://amoy.polygonscan.com",
+      "contracts": {
+        "EnergyMonitorLegacy": "TBD",
+        "SimpleEnergyMonitorWithChainlink": "TBD"
+      }
+    },
+    "sepolia": {
+      "name": "Ethereum Sepolia",
+      "chainId": 11155111,
+      "rpcUrl": "https://sepolia.infura.io/v3/YOUR_KEY",
+      "explorer": "https://sepolia.etherscan.io",
+      "contracts": {
+        "EnergyMonitorLegacy": "TBD",
+        "SimpleEnergyMonitorWithChainlink": "TBD"
+      }
+    }
+  },
+  "recommendedContract": "ChainlinkEnergyMonitor",
+  "compatibility": {
+    "legacyDataStructure": true,
+    "frontendReady": true,
+    "productionReady": true
+  }
+}
