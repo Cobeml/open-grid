@@ -1,10 +1,10 @@
 {
-  "buildCommand": "ls -la && pwd && yarn install && cd packages/frontend && yarn build",
-  "outputDirectory": "packages/frontend/.next",
+  "buildCommand": "yarn install && yarn build",
+  "outputDirectory": ".next",
   "framework": "nextjs",
   "regions": ["iad1"],
   "functions": {
-    "packages/frontend/pages/api/**/*.js": {
+    "src/app/api/**/*.js": {
       "maxDuration": 30
     }
   },
