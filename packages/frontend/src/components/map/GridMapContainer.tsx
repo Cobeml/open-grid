@@ -7,9 +7,8 @@ import { useEnergyData } from '@/hooks/useEnergyData';
 import { NetworkSelector } from './NetworkSelector';
 import { StatsOverlay } from './StatsOverlay';
 import { ContractInfo } from './ContractInfo';
-import { MapControls } from './MapControls';
 import { GridNode, GridEdge, MapNode, MapEdge } from '@/types/grid';
-import { Activity, Zap, AlertTriangle, Settings } from 'lucide-react';
+import { Activity, Zap, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { MAPBOX_ACCESS_TOKEN, INITIAL_VIEW_STATE, DEFAULT_MAP_STYLE } from '@/lib/constants';
@@ -78,7 +77,6 @@ interface GridMapContainerProps {
 export function GridMapContainer({ selectedChain, onChainChange }: GridMapContainerProps) {
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
   const [showEdges, setShowEdges] = useState(true);
-  const [showHeatmap, setShowHeatmap] = useState(true);
   const [selectedNode, setSelectedNode] = useState<GridNode | null>(null);
   const [selectedEdge, setSelectedEdge] = useState<GridEdge | null>(null);
   const [mapStyle, setMapStyle] = useState<string>(DEFAULT_MAP_STYLE);
@@ -158,10 +156,16 @@ export function GridMapContainer({ selectedChain, onChainChange }: GridMapContai
     setViewState(newViewState);
   }, []);
 
-  const handleNodeClick = useCallback((node: GridNode) => {
-    setSelectedNode(selectedNode?.id === node.id ? null : node);
-    setSelectedEdge(null);
-  }, [selectedNode]);
+  const handleNodeClick = useCallback((event: any) => {
+    const nodeId = event.target.dataset.nodeId;
+    if (nodeId) {
+      const node = mapNodes.find(n => n.id.toString() === nodeId);
+      if (node) {
+        setSelectedNode(selectedNode?.id === node.id ? null : node);
+        setSelectedEdge(null);
+      }
+    }
+  }, [selectedNode, mapNodes]);
 
   const handleEdgeClick = useCallback((event: any) => {
     const feature = event.features[0];
@@ -203,28 +207,57 @@ export function GridMapContainer({ selectedChain, onChainChange }: GridMapContai
     <div className="relative w-full h-screen bg-gray-900">
       {/* Map Controls */}
       <div className="absolute top-4 left-4 z-10">
-        <MapControls
-          showHeatmap={showHeatmap}
-          onToggleHeatmap={() => setShowHeatmap(!showHeatmap)}
-          showTooltips={true}
-          onToggleTooltips={() => {}}
-          mapStyle={mapStyle}
-          onMapStyleChange={setMapStyle}
-        />
-        
-        {/* Edge Toggle */}
-        <div className="mt-2 bg-gray-800/90 backdrop-blur-md border border-gray-600 rounded-lg p-2">
+        <div className="bg-gray-800/90 backdrop-blur-md border border-gray-600 rounded-lg p-2">
+          {/* Map Style Selector */}
+          <div className="mb-2">
+            <select
+              value={mapStyle}
+              onChange={(e) => setMapStyle(e.target.value)}
+              className="w-full px-3 py-2 rounded-md text-sm font-medium bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-energy-500"
+            >
+              <option value="mapbox://styles/mapbox/satellite-v9">Satellite</option>
+              <option value="mapbox://styles/mapbox/satellite-streets-v12">Satellite Streets</option>
+              <option value="mapbox://styles/mapbox/dark-v11">Dark</option>
+              <option value="mapbox://styles/mapbox/light-v11">Light</option>
+              <option value="mapbox://styles/mapbox/outdoors-v12">Terrain</option>
+            </select>
+          </div>
+          
+          {/* Edge Toggle */}
           <button
             onClick={() => setShowEdges(!showEdges)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+            className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 w-full ${
               showEdges 
                 ? 'bg-energy-500 text-white shadow-md' 
                 : 'text-gray-300 hover:text-white hover:bg-gray-700'
             }`}
           >
             <Zap className="w-4 h-4" />
-            Transmission Lines
+            {showEdges ? 'Hide' : 'Show'} Transmission Lines
           </button>
+        </div>
+        
+        {/* Legend */}
+        <div className="mt-2 bg-gray-800/90 backdrop-blur-md border border-gray-600 rounded-lg p-3">
+          <h3 className="text-xs font-semibold text-gray-300 mb-2">Energy Usage</h3>
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 text-xs">
+              <div className="w-3 h-3 rounded-full bg-green-500" />
+              <span className="text-gray-300">Low (&lt; 2k kWh)</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <div className="w-3 h-3 rounded-full bg-yellow-500" />
+              <span className="text-gray-300">Medium (2k-5k kWh)</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <div className="w-3 h-3 rounded-full bg-red-500" />
+              <span className="text-gray-300">High (&gt; 5k kWh)</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <div className="w-3 h-3 rounded-full bg-gray-500" />
+              <span className="text-gray-300">Inactive</span>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -326,7 +359,8 @@ export function GridMapContainer({ selectedChain, onChainChange }: GridMapContai
             >
             <div
               className="cursor-pointer transition-all duration-200 hover:scale-110"
-              onClick={() => handleNodeClick(node)}
+              onClick={handleNodeClick}
+              data-node-id={node.id}
               style={{
                 width: `${node.size}px`,
                 height: `${node.size}px`,
