@@ -36,6 +36,7 @@
     "recharts": "^2.8.0",
     "socket.io-client": "^4.7.0",
     "tailwind-merge": "^2.6.0",
+    "unstorage": "^1.16.1",
     "viem": "^2.7.0",
     "wagmi": "^2.5.0",
     "zustand": "^4.5.0"

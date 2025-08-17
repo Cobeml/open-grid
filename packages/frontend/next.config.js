@@ -2,14 +2,33 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@deck.gl/react', '@deck.gl/layers', '@deck.gl/core'],
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     config.externals.push('pino-pretty', 'lokijs', 'encoding');
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-      net: false,
-      tls: false,
-    };
+    
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: false,
+        stream: false,
+        url: false,
+        zlib: false,
+        http: false,
+        https: false,
+        assert: false,
+        os: false,
+        path: false,
+        unstorage: false,
+      };
+    }
+    
+    // Ignore warnings from WalletConnect/unstorage modules
+    config.ignoreWarnings = [
+      { message: /(unstorage|@walletconnect)/ }
+    ];
+    
     return config;
   },
   env: {
