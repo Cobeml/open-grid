@@ -109,8 +109,10 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# Python lib directories (be specific to avoid ignoring frontend src/lib)
+/lib/
 lib64/
+python*/lib/
 parts/
 sdist/
 var/
