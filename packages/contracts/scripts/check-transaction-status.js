@@ -4,7 +4,7 @@ const { ethers } = require("hardhat");
  * Check Transaction Status on Polygon Amoy
  */
 
-const TX_HASH = "0x704c669344d531df918d4a3edc9f66b59a867476f46b6764238595d6ca88bc96";
+const TX_HASH = "0x7612194b7b475da33737fbccd4fc147c417c613e66880c89d650e395452fbb27";
 
 async function main() {
   try {

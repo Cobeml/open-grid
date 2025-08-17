@@ -33,6 +33,12 @@ export function Header() {
               </h1>
               <p className="text-xs text-gray-400">Energy Monitoring</p>
             </div>
+            <a
+              href="/walrus"
+              className="ml-4 text-sm text-gray-300 hover:text-white underline-offset-4 hover:underline"
+            >
+              Walrus Viewer
+            </a>
           </motion.div>
 
           {/* Status Indicators */}

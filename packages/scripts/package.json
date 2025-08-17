@@ -1,0 +1,12 @@
+{
+  "name": "@open-grid/scripts",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "walrus:upload-nyc": "node upload-nyc-walrus.js"
+  },
+  "dependencies": {}
+}
+
+

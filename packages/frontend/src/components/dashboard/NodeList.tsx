@@ -1,18 +1,32 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
-import { Activity, MapPin, Clock, Zap } from 'lucide-react';
+import { Activity, MapPin, Clock, Zap, Wallet } from 'lucide-react';
 import { formatUsage, formatTimestamp, getStatusColor } from '@/lib/utils';
 import { NodeData } from '@/types/energy';
+import { useAccount, useChainId } from 'wagmi';
+import { parseEther, encodeFunctionData } from 'viem';
+import { SUPPORTED_CHAINS } from '@/lib/wagmi';
 
 interface NodeListProps {
   nodes: NodeData[];
 }
 
 export function NodeList({ nodes }: NodeListProps) {
+  const { isConnected, address } = useAccount();
+  const chainId = useChainId();
+  const chainConfig = SUPPORTED_CHAINS[chainId as keyof typeof SUPPORTED_CHAINS];
+  const fundingAddress = (process.env.NEXT_PUBLIC_HEDERA_TESTNET_FUNDING_ADDRESS && chainId === 296)
+    ? process.env.NEXT_PUBLIC_HEDERA_TESTNET_FUNDING_ADDRESS
+    : (process.env.NEXT_PUBLIC_FLOW_TESTNET_FUNDING_ADDRESS && chainId === 545)
+      ? process.env.NEXT_PUBLIC_FLOW_TESTNET_FUNDING_ADDRESS
+      : undefined;
+
+  const [pendingNodeId, setPendingNodeId] = useState<number | null>(null);
+  const [amountByNode, setAmountByNode] = useState<Record<number, string>>({});
   if (nodes.length === 0) {
     return (
       <Card className="bg-gray-900/50 border-gray-800">
@@ -53,6 +67,7 @@ export function NodeList({ nodes }: NodeListProps) {
             const locationParts = node.location.split(',');
             const lat = locationParts[0]?.replace('lat:', '') || 'Unknown';
             const lon = locationParts[1]?.replace('lon:', '') || 'Unknown';
+            const amount = amountByNode[node.id] || '';
             
             return (
               <motion.div
@@ -141,6 +156,86 @@ export function NodeList({ nodes }: NodeListProps) {
                         <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                         <span className="text-green-400 font-medium">Online</span>
                       </div>
+                    </div>
+                    <div className="mt-3 flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                      <input
+                        className="w-full sm:w-40 bg-gray-900/50 border border-gray-700 rounded px-3 py-1.5 text-white text-xs focus:outline-none focus:border-energy-500"
+                        placeholder="Amount (e.g. 0.01)"
+                        inputMode="decimal"
+                        value={amount}
+                        onChange={(e) => setAmountByNode(prev => ({ ...prev, [node.id]: e.target.value }))}
+                      />
+                      <button
+                        disabled={!isConnected || !fundingAddress || pendingNodeId === node.id || !amount}
+                        onClick={async () => {
+                          try {
+                            setPendingNodeId(node.id);
+                            const to = fundingAddress as `0x${string}`;
+                            const value = parseEther(amount);
+                            // Prepare calldata for fundNode(uint256)
+                            const data = encodeFunctionData({
+                              abi: [
+                                { name: 'fundNode', type: 'function', stateMutability: 'payable', inputs: [{ name: 'nodeId', type: 'uint256' }], outputs: [] }
+                              ] as const,
+                              functionName: 'fundNode',
+                              args: [BigInt(node.id)],
+                            });
+                            await (window as any).ethereum?.request?.({
+                              method: 'eth_sendTransaction',
+                              params: [{ from: address, to, value: `0x${value.toString(16)}`, data }]
+                            });
+                          } catch (err) {
+                            console.error('Funding failed', err);
+                          } finally {
+                            setPendingNodeId(null);
+                          }
+                        }}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                          !isConnected || !fundingAddress || !amount
+                            ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                            : 'bg-energy-600 hover:bg-energy-500 text-white'
+                        }`}
+                      >
+                        <Wallet className="w-3 h-3" />
+                        {pendingNodeId === node.id ? 'Funding…' : 'Fund Node'}
+                      </button>
+                      <button
+                        disabled={!isConnected || !fundingAddress || pendingNodeId === node.id || !amount}
+                        onClick={async () => {
+                          try {
+                            setPendingNodeId(node.id);
+                            const to = fundingAddress as `0x${string}`;
+                            const value = parseEther(amount);
+                            // Prepare calldata for purchaseNode(uint256)
+                            const data = encodeFunctionData({
+                              abi: [
+                                { name: 'purchaseNode', type: 'function', stateMutability: 'payable', inputs: [{ name: 'nodeId', type: 'uint256' }], outputs: [] }
+                              ] as const,
+                              functionName: 'purchaseNode',
+                              args: [BigInt(node.id)],
+                            });
+                            await (window as any).ethereum?.request?.({
+                              method: 'eth_sendTransaction',
+                              params: [{ from: address, to, value: `0x${value.toString(16)}`, data }]
+                            });
+                          } catch (err) {
+                            console.error('Purchase failed', err);
+                          } finally {
+                            setPendingNodeId(null);
+                          }
+                        }}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+                          !isConnected || !fundingAddress || !amount
+                            ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                            : 'bg-energy-600 hover:bg-energy-500 text-white'
+                        }`}
+                      >
+                        <Wallet className="w-3 h-3" />
+                        {pendingNodeId === node.id ? 'Purchasing…' : 'Purchase'}
+                      </button>
+                      {!fundingAddress && (
+                        <span className="text-[10px] text-yellow-400">No funding contract configured for {chainConfig?.name}</span>
+                      )}
                     </div>
                   </div>
                 )}

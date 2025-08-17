@@ -19,6 +19,7 @@
     "contracts:test": "yarn workspace @open-grid/contracts test",
     "scripts:listen": "yarn workspace @open-grid/scripts listen",
     "scripts:ingest": "yarn workspace @open-grid/scripts ingest",
+    "walrus:upload-nyc": "yarn workspace @open-grid/scripts walrus:upload-nyc",
     "mock:generate": "yarn workspace @open-grid/mock-data generate"
   },
   "devDependencies": {
